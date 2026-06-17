@@ -19,6 +19,7 @@ export async function GET(req: NextRequest) {
         if (!user) return NextResponse.json({ error: 'User not found' }, { status: 404 });
 
         let studentData = null;
+        let staffData = null;
         let complaints: any[] = [];
 
         // If student, get student data and their complaints
@@ -41,11 +42,22 @@ export async function GET(req: NextRequest) {
                     
                 complaints = stdComplaints || [];
             }
+        } else if (user.role === 'MAINTENANCE') {
+            const { data: staff } = await supabase
+                .from('maintenance_staff')
+                .select('user_id, department_code, department')
+                .eq('user_id', user.id)
+                .single();
+                
+            if (staff) {
+                staffData = staff;
+            }
         }
 
         return NextResponse.json({ 
             user: { ...user, studentId: studentData?.id },
             student: studentData ? { ...studentData, user } : null,
+            staff: staffData ? { ...staffData, user } : null,
             complaints
         });
 
