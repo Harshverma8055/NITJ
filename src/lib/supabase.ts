@@ -1,8 +1,8 @@
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://uqlcdkbypqqbnbhmqsba.supabase.co';
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVxbGNka2J5cHFxYm5iaG1xc2JhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU2NjI1NzIsImV4cCI6MjA5MTIzODU3Mn0.8BBp35rrJy3e3mfR7_TiQHG3KDZkINBNMRHoyNUzChY';
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://wnepvwokvadayyicgdpy.supabase.co';
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InduZXB2d29rdmFkYXl5aWNnZHB5Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4MTYxNzAyOCwiZXhwIjoyMDk3MTkzMDI4fQ.fgwfLqr7OfVcFa15PBz6bBHgwIlssZ7Hl33lFYQuvRA';
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'sb_publishable_2ZEm4FHv83dTMWMWL1t2uw_EouP9IR9';
 
 // Use service role key if available, otherwise fall back to anon key
 // Service role key bypasses RLS; anon key uses RLS policies
