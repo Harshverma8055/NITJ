@@ -1,0 +1,53 @@
+{
+  "totalRows": 1126,
+  "columns": [
+    "Roll List - B.Tech (Batch-2025)"
+  ],
+  "rows": [
+    [
+      "S. No.",
+      "Roll No.",
+      "Name",
+      "Branch Abbr.",
+      "Branch",
+      "Group",
+      "Sub Group"
+    ],
+    [
+      1,
+      25102001,
+      "AAKASH DIWAKAR",
+      "CE",
+      "CIVIL ENGINEERING",
+      "A1",
+      "A1a"
+    ],
+    [
+      2,
+      25102002,
+      "ABHISHEK KUMAR",
+      "CE",
+      "CIVIL ENGINEERING",
+      "A1",
+      "A1a"
+    ],
+    [
+      3,
+      25102003,
+      "ADITYA MEHTA",
+      "CE",
+      "CIVIL ENGINEERING",
+      "A1",
+      "A1a"
+    ],
+    [
+      4,
+      25102004,
+      "ADITYA POONIA",
+      "CE",
+      "CIVIL ENGINEERING",
+      "A1",
+      "A1a"
+    ]
+  ]
+}

@@ -1,0 +1,129 @@
+▲ Next.js 16.1.6 (Turbopack)
+- Local:         http://localhost:3000
+- Network:       http://192.168.1.13:3000
+- Environments: .env.local
+
+✓ Starting...
+✓ Ready in 775ms
+ GET /student/complaints/new 200 in 273ms (compile: 89ms, proxy.ts: 85ms, render: 100ms)
+ GET /api/auth/me 200 in 2.5s (compile: 81ms, render: 2.4s)
+ GET /login 200 in 56ms (compile: 15ms, proxy.ts: 6ms, render: 36ms)
+ GET /manifest.webmanifest 200 in 32ms (compile: 28ms, render: 4ms)
+ GET /apple-icon?size=180x180 404 in 76ms (compile: 38ms, render: 38ms)
+Login attempt for: 234567@nitj.ac.in
+Supabase error: {
+  code: 'PGRST116',
+  details: 'The result contains 0 rows',
+  hint: null,
+  message: 'Cannot coerce the result to a single JSON object'
+}
+Supabase user found: No
+ POST /api/auth/login 401 in 515ms (compile: 33ms, render: 482ms)
+Login attempt for: 234567@nitj.ac.in
+Supabase error: {
+  code: 'PGRST116',
+  details: 'The result contains 0 rows',
+  hint: null,
+  message: 'Cannot coerce the result to a single JSON object'
+}
+Supabase user found: No
+ POST /api/auth/login 401 in 1281ms (compile: 2ms, render: 1279ms)
+ GET /register 404 in 29ms (compile: 4ms, proxy.ts: 2ms, render: 23ms)
+ GET /manifest.webmanifest 200 in 5ms (compile: 2ms, render: 3ms)
+ GET /apple-icon?size=180x180 404 in 31ms (compile: 4ms, render: 27ms)
+ GET /signup 404 in 35ms (compile: 5ms, render: 30ms)
+ GET /manifest.webmanifest 200 in 5ms (compile: 3ms, render: 2ms)
+ GET /apple-icon?size=180x180 404 in 35ms (compile: 5ms, render: 30ms)
+ GET /login 200 in 38ms (compile: 5ms, proxy.ts: 3ms, render: 30ms)
+ GET /manifest.webmanifest 200 in 5ms (compile: 1919µs, render: 3ms)
+ GET /apple-icon?size=180x180 404 in 54ms (compile: 11ms, render: 43ms)
+Login attempt for: 234567@nitj.ac.in
+Supabase error: {
+  code: 'PGRST116',
+  details: 'The result contains 0 rows',
+  hint: null,
+  message: 'Cannot coerce the result to a single JSON object'
+}
+Supabase user found: No
+ POST /api/auth/login 401 in 3.1s (compile: 1789µs, render: 3.1s)
+Login attempt for: 234567@nitj.ac.in
+Supabase error: {
+  code: 'PGRST116',
+  details: 'The result contains 0 rows',
+  hint: null,
+  message: 'Cannot coerce the result to a single JSON object'
+}
+Supabase user found: No
+ POST /api/auth/login 401 in 345ms (compile: 1744µs, render: 344ms)
+ GET /login 200 in 33ms (compile: 1908µs, proxy.ts: 3ms, render: 29ms)
+ GET /manifest.webmanifest 200 in 6ms (compile: 3ms, render: 3ms)
+ GET /apple-icon?size=180x180 404 in 32ms (compile: 5ms, render: 28ms)
+ GET /about 200 in 64ms (compile: 27ms, render: 37ms)
+ GET /manifest.webmanifest 200 in 5ms (compile: 3ms, render: 3ms)
+ GET /apple-icon?size=180x180 404 in 27ms (compile: 5ms, render: 22ms)
+ GET /login 200 in 42ms (compile: 3ms, proxy.ts: 3ms, render: 36ms)
+ GET /manifest.webmanifest 200 in 6ms (compile: 3ms, render: 3ms)
+ GET /apple-icon?size=180x180 404 in 34ms (compile: 4ms, render: 30ms)
+Login attempt for: 234567@nitj.ac.in
+Supabase error: {
+  code: 'PGRST116',
+  details: 'The result contains 0 rows',
+  hint: null,
+  message: 'Cannot coerce the result to a single JSON object'
+}
+Supabase user found: No
+ POST /api/auth/login 401 in 2.1s (compile: 2ms, render: 2.1s)
+ GET /login 200 in 43ms (compile: 3ms, proxy.ts: 4ms, render: 35ms)
+ GET /manifest.webmanifest 200 in 6ms (compile: 3ms, render: 3ms)
+ GET /apple-icon?size=180x180 404 in 42ms (compile: 8ms, render: 34ms)
+Login attempt for: admin@campusniti.com
+Supabase error: {
+  code: 'PGRST116',
+  details: 'The result contains 0 rows',
+  hint: null,
+  message: 'Cannot coerce the result to a single JSON object'
+}
+Supabase user found: No
+ POST /api/auth/login 401 in 661ms (compile: 1952µs, render: 659ms)
+ GET /signup 404 in 36ms (compile: 9ms, render: 27ms)
+ GET /manifest.webmanifest 200 in 9ms (compile: 5ms, render: 4ms)
+ GET /apple-icon?size=180x180 404 in 34ms (compile: 6ms, render: 28ms)
+ GET /login 200 in 38ms (compile: 3ms, proxy.ts: 5ms, render: 30ms)
+ GET /manifest.webmanifest 200 in 6ms (compile: 3ms, render: 2ms)
+ GET /apple-icon?size=180x180 404 in 35ms (compile: 6ms, render: 28ms)
+Login attempt for: student@campusniti.com
+Supabase error: {
+  code: 'PGRST116',
+  details: 'The result contains 0 rows',
+  hint: null,
+  message: 'Cannot coerce the result to a single JSON object'
+}
+Supabase user found: No
+ POST /api/auth/login 401 in 2.0s (compile: 8ms, render: 2.0s)
+Login attempt for: 25103063@nitj.ac.in
+Supabase error: {
+  code: 'PGRST116',
+  details: 'The result contains 0 rows',
+  hint: null,
+  message: 'Cannot coerce the result to a single JSON object'
+}
+Supabase user found: No
+ POST /api/auth/login 401 in 791ms (compile: 3ms, render: 788ms)
+Login attempt for: 234567@nitj.ac.in
+Supabase error: {
+  code: 'PGRST116',
+  details: 'The result contains 0 rows',
+  hint: null,
+  message: 'Cannot coerce the result to a single JSON object'
+}
+Supabase user found: No
+ POST /api/auth/login 401 in 1399ms (compile: 2ms, render: 1397ms)
+Login attempt for: 234567@nitj.ac.in
+Supabase error: {
+  code: 'PGRST116',
+  details: 'The result contains 0 rows',
+  hint: null,
+  message: 'Cannot coerce the result to a single JSON object'
+}
+Supabase user found: No
+ POST /api/auth/login 401 in 372ms (compile: 1375µs, render: 371ms)

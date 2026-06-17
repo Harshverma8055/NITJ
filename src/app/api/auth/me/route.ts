@@ -1,0 +1,56 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { getSession } from '@/lib/auth';
+import { getSupabase } from '@/lib/supabase';
+
+export async function GET(req: NextRequest) {
+    try {
+        const session = await getSession();
+        if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+        const supabase = getSupabase();
+
+        // Get User
+        const { data: user } = await supabase
+            .from('users')
+            .select('id, name, email, role')
+            .eq('id', session.userId)
+            .single();
+
+        if (!user) return NextResponse.json({ error: 'User not found' }, { status: 404 });
+
+        let studentData = null;
+        let complaints: any[] = [];
+
+        // If student, get student data and their complaints
+        if (user.role === 'STUDENT') {
+            const { data: student } = await supabase
+                .from('students')
+                .select('id, roll_number, department, year, rating')
+                .eq('user_id', user.id)
+                .single();
+
+            if (student) {
+                studentData = student;
+                
+                const { data: stdComplaints } = await supabase
+                    .from('complaints')
+                    .select('id, title, category, zone, severity, status, is_emergency, created_at')
+                    .eq('reporter_student_id', student.id)
+                    .order('created_at', { ascending: false })
+                    .limit(5);
+                    
+                complaints = stdComplaints || [];
+            }
+        }
+
+        return NextResponse.json({ 
+            user: { ...user, studentId: studentData?.id },
+            student: studentData ? { ...studentData, user } : null,
+            complaints
+        });
+
+    } catch (err) {
+        console.error('Error in /api/auth/me:', err);
+        return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    }
+}
