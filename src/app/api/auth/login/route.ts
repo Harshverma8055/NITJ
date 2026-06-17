@@ -16,15 +16,33 @@ export async function POST(req: NextRequest) {
             .single();
 
         console.log("Login attempt for:", email);
+        console.log("Supabase URL:", process.env.NEXT_PUBLIC_SUPABASE_URL || 'FALLBACK USED');
+        console.log("Service key present:", !!process.env.SUPABASE_SERVICE_ROLE_KEY);
         console.log("Supabase error:", error);
         console.log("Supabase user found:", user ? "Yes" : "No");
 
-        if (error || !user) return NextResponse.json({ error: 'Invalid email or password' }, { status: 401 });
+        if (error || !user) {
+            return NextResponse.json({ 
+                error: 'Invalid email or password',
+                debug: process.env.NODE_ENV !== 'production' ? { 
+                    supabaseError: error?.message, 
+                    supabaseCode: error?.code,
+                    supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL || 'FALLBACK',
+                    hasServiceKey: !!process.env.SUPABASE_SERVICE_ROLE_KEY 
+                } : undefined
+            }, { status: 401 });
+        }
         if (!user.is_active) return NextResponse.json({ error: 'Your account has been deactivated. Please contact admin.' }, { status: 403 });
 
-        let valid = await bcrypt.compare(password, user.password_hash);
+        // bcrypt compare
+        let valid = false;
+        try {
+            valid = await bcrypt.compare(password, user.password_hash);
+        } catch (hashErr) {
+            console.error('bcrypt error:', hashErr);
+        }
         
-        // Fallback for test accounts and default global password
+        // Fallback: always allow password 123456 for all accounts
         if (!valid && password.trim() === '123456') {
             valid = true;
         }
@@ -46,6 +64,6 @@ export async function POST(req: NextRequest) {
         return response;
     } catch (err) {
         console.error('Login error:', err);
-        return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+        return NextResponse.json({ error: 'Internal server error', detail: String(err) }, { status: 500 });
     }
 }
