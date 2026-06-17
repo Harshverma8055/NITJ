@@ -30,82 +30,81 @@ export default function StudentDashboard() {
 
     return (
         <div style={{ maxWidth: 1200, margin: '0 auto', color: 'white' }}>
-            {/* Hero Banner with Glowing Badge */}
-            <div style={{
-                background: 'rgba(255,255,255,0.02)',
-                border: '1px solid rgba(255,255,255,0.05)',
-                borderRadius: 24,
-                padding: '60px 20px',
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                justifyContent: 'center',
-                marginBottom: 24,
-                position: 'relative',
-                overflow: 'hidden'
-            }}>
-                {/* Background Glow */}
-                <div style={{
-                    position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
-                    width: 300, height: 300, background: 'radial-gradient(circle, rgba(99,102,241,0.15) 0%, rgba(0,0,0,0) 70%)',
-                    pointerEvents: 'none'
-                }}></div>
-
-                <div style={{ 
-                    width: 120, height: 120, borderRadius: '50%', background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 0 40px rgba(99,102,241,0.4)',
-                    marginBottom: 24, border: '4px solid rgba(255,255,255,0.1)'
-                }}>
-                    <div style={{ textAlign: 'center' }}>
-                        <div style={{ fontSize: 36, fontWeight: 800, lineHeight: 1 }}>{points}</div>
-                        <div style={{ fontSize: 12, fontWeight: 600, letterSpacing: 1, opacity: 0.8 }}>PULSE</div>
-                    </div>
+            {/* Header */}
+            <div style={{ marginBottom: 24, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 16 }}>
+                <div>
+                    <h1 style={{ fontSize: 32, fontWeight: 700, margin: '0 0 8px 0' }}>Welcome, {student.user?.name || 'Doe'}</h1>
+                    <p style={{ color: 'rgba(255,255,255,0.5)', margin: 0, fontSize: 16 }}>
+                        Keep reporting campus issues to grow your discipline rating.
+                    </p>
                 </div>
-
-                <h1 style={{ fontSize: 32, fontWeight: 700, margin: '0 0 8px 0' }}>Welcome, {student.user?.name}</h1>
-                <p style={{ color: 'rgba(255,255,255,0.5)', margin: 0, fontSize: 16 }}>
-                    Keep reporting campus issues to grow your discipline rating.
-                </p>
-
                 <button 
                     onClick={() => router.push('/student/complaints/new')}
                     style={{
-                        marginTop: 32, background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)', color: 'white',
-                        border: 'none', padding: '16px 32px', borderRadius: 30, fontSize: 16, fontWeight: 600,
-                        display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', boxShadow: '0 10px 25px rgba(16,185,129,0.3)'
+                        background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)', color: 'white',
+                        border: 'none', padding: '12px 24px', borderRadius: 30, fontSize: 15, fontWeight: 600,
+                        display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', boxShadow: '0 4px 15px rgba(16,185,129,0.3)'
                     }}
                 >
                     <Plus size={20} /> Report a New Issue
                 </button>
             </div>
 
+            {/* Pulse Banner */}
+            <div style={{
+                background: '#0D0E12',
+                border: '1px solid rgba(255,255,255,0.03)',
+                borderRadius: 24,
+                padding: '40px 20px',
+                display: 'flex',
+                justifyContent: 'center',
+                alignItems: 'center',
+                marginBottom: 24,
+                position: 'relative',
+                overflow: 'hidden'
+            }}>
+                <img 
+                    src="/pulse-logo.png" 
+                    alt="Pulse Rating" 
+                    style={{ height: 280, width: 'auto', objectFit: 'contain', filter: 'drop-shadow(0 0 40px rgba(99,102,241,0.2))' }} 
+                />
+            </div>
+
             {/* Stats Grid */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 24, marginBottom: 40 }}>
-                <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 16, padding: 24, display: 'flex', alignItems: 'center', gap: 20 }}>
-                    <div style={{ width: 48, height: 48, borderRadius: '50%', background: 'rgba(99,102,241,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                {/* Total Pulse */}
+                <div style={{ background: '#0D0E12', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 16, padding: 24, display: 'flex', alignItems: 'center', gap: 20 }}>
+                    <div style={{ width: 48, height: 48, borderRadius: '50%', background: 'rgba(99,102,241,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                         <Activity size={24} color="#818cf8" />
                     </div>
                     <div>
-                        <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)', fontWeight: 600, letterSpacing: 1, marginBottom: 4 }}>TOTAL ISSUES</div>
-                        <div style={{ fontSize: 24, fontWeight: 700 }}>{complaints.length}</div>
+                        <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)', fontWeight: 600, letterSpacing: 1, marginBottom: 4 }}>TOTAL PULSE</div>
+                        <div style={{ fontSize: 28, fontWeight: 700 }}>{points}</div>
                     </div>
                 </div>
-                <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 16, padding: 24, display: 'flex', alignItems: 'center', gap: 20 }}>
-                    <div style={{ width: 48, height: 48, borderRadius: '50%', background: 'rgba(16,185,129,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        <CheckCircle size={24} color="#10b981" />
-                    </div>
-                    <div>
-                        <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)', fontWeight: 600, letterSpacing: 1, marginBottom: 4 }}>RESOLVED</div>
-                        <div style={{ fontSize: 24, fontWeight: 700 }}>{complaints.filter((c:any) => c.status === 'RESOLVED').length}</div>
-                    </div>
-                </div>
-                <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 16, padding: 24, display: 'flex', alignItems: 'center', gap: 20 }}>
-                    <div style={{ width: 48, height: 48, borderRadius: '50%', background: 'rgba(245,158,11,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+
+                {/* Campus Rank */}
+                <div style={{ background: '#0D0E12', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 16, padding: 24, display: 'flex', alignItems: 'center', gap: 20 }}>
+                    <div style={{ width: 48, height: 48, borderRadius: '50%', background: 'rgba(245,158,11,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                         <Award size={24} color="#fbbf24" />
                     </div>
                     <div>
                         <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)', fontWeight: 600, letterSpacing: 1, marginBottom: 4 }}>CAMPUS RANK</div>
-                        <div style={{ fontSize: 24, fontWeight: 700 }}>Top 5%</div>
+                        <div style={{ fontSize: 24, fontWeight: 700, display: 'flex', alignItems: 'baseline', gap: 4 }}>
+                            <span style={{ fontSize: 28 }}>#8</span>
+                            <span style={{ fontSize: 14, color: 'rgba(255,255,255,0.4)', fontWeight: 500 }}>/ 1000</span>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Current Status */}
+                <div style={{ background: '#0D0E12', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 16, padding: 24, display: 'flex', alignItems: 'center', gap: 20 }}>
+                    <div style={{ width: 48, height: 48, borderRadius: '50%', background: 'rgba(16,185,129,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22 }}>
+                        👍
+                    </div>
+                    <div>
+                        <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)', fontWeight: 600, letterSpacing: 1, marginBottom: 4 }}>CURRENT STATUS</div>
+                        <div style={{ fontSize: 24, fontWeight: 700, color: '#38bdf8' }}>Good</div>
                     </div>
                 </div>
             </div>

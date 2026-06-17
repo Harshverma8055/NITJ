@@ -77,7 +77,7 @@ export default function AdminComplaintsPage() {
                     const isWorking = c.status === 'IN_PROGRESS';
                     const isPending = c.status === 'PENDING_REVIEW';
                     
-                    const score = c.upvote_count > 0 ? (14.44 + c.upvote_count).toFixed(2) : '15.97';
+                    const score = c.priority_score ? Number(c.priority_score).toFixed(2) : (c.upvote_count > 0 ? (14.44 + c.upvote_count).toFixed(2) : '15.97');
 
                     return (
                         <div key={c.id} style={{ 
@@ -134,11 +134,11 @@ export default function AdminComplaintsPage() {
 
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                     <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'rgba(255,255,255,0.4)', fontSize: 13 }}>
-                                        <MessageSquare size={14} /> {c.comments?.length || 0}
+                                        <MessageSquare size={14} /> {c.comment_count || 0}
                                     </div>
                                     <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: 12, display: 'flex', alignItems: 'center', gap: 6 }}>
                                         <div style={{ width: 14, height: 14, borderRadius: '50%', border: '1px solid rgba(255,255,255,0.4)' }}></div>
-                                        Inderjeet ({c.reporter_student_id ? '234567' : '11111'}) • {new Date(c.created_at).toLocaleDateString()}
+                                        {c.reporter?.name || 'Anonymous'} ({c.reporter?.rollNumber || 'N/A'}) • {new Date(c.created_at).toLocaleDateString()}
                                     </div>
                                 </div>
                             </div>

@@ -32,27 +32,31 @@ export default function AdminDashboard() {
     return (
         <div style={{ maxWidth: 1200, margin: '0 auto', color: 'white', paddingBottom: 60 }}>
             {/* Header */}
-            <div style={{ marginBottom: 32 }}>
-                <h1 style={{ fontSize: 28, margin: '0 0 8px 0', display: 'flex', alignItems: 'center', gap: 12, fontWeight: 700 }}>
-                    👑 Admin Dashboard
+            <div style={{ marginBottom: 32, position: 'relative' }}>
+                <div style={{ position: 'absolute', top: -50, left: -50, width: 200, height: 200, background: 'radial-gradient(circle, rgba(139,92,246,0.15) 0%, transparent 70%)', pointerEvents: 'none' }}></div>
+                <h1 style={{ fontSize: 32, margin: '0 0 8px 0', display: 'flex', alignItems: 'center', gap: 12, fontWeight: 800 }}>
+                    <span style={{ background: 'linear-gradient(135deg, #a855f7 0%, #6366f1 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Admin</span> Dashboard
                 </h1>
-                <p style={{ color: 'rgba(255,255,255,0.5)', margin: 0, fontSize: 14 }}>
+                <p style={{ color: 'rgba(255,255,255,0.5)', margin: 0, fontSize: 15 }}>
                     Complete system overview and management
                 </p>
             </div>
 
             {/* Stats Row */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 16, marginBottom: 24 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 20, marginBottom: 32 }}>
                 {statsConfig.map((s, i) => (
                     <div key={i} style={{ 
-                        background: '#13151A', border: `1px solid ${s.border}`, borderRadius: 16, padding: 20,
-                        boxShadow: i === 0 ? '0 0 20px rgba(99,102,241,0.1)' : 'none'
-                    }}>
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 40, height: 40, borderRadius: 12, background: s.bg, marginBottom: 16 }}>
+                        background: '#0D0E12', border: `1px solid ${s.border}`, borderRadius: 20, padding: 24,
+                        boxShadow: i === 0 ? '0 8px 30px rgba(99,102,241,0.1)' : '0 4px 20px rgba(0,0,0,0.2)',
+                        display: 'flex', alignItems: 'center', gap: 20, transition: 'transform 0.2s', cursor: 'pointer'
+                    }} onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-2px)'} onMouseLeave={e => e.currentTarget.style.transform = 'translateY(0)'}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 56, height: 56, borderRadius: 16, background: s.bg }}>
                             {s.icon}
                         </div>
-                        <div style={{ fontSize: 24, fontWeight: 700, marginBottom: 4 }}>{s.value}</div>
-                        <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)' }}>{s.title}</div>
+                        <div>
+                            <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.5)', fontWeight: 600, letterSpacing: 1, marginBottom: 4 }}>{s.title.toUpperCase()}</div>
+                            <div style={{ fontSize: 32, fontWeight: 800 }}>{s.value}</div>
+                        </div>
                     </div>
                 ))}
             </div>

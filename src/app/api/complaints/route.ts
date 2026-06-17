@@ -329,7 +329,7 @@ export async function POST(request: NextRequest) {
                 status:                   'PENDING_REVIEW',
                 priority:                 computedPriority,
                 assigned_department_code: routing.department,
-                routing_confidence:       routing.confidence,
+                routing_confidence:       routing.confidence === 'HIGH' ? 1.0 : routing.confidence === 'MEDIUM' ? 0.7 : 0.4,
                 routing_reason:           routing.reason,
             })
             .select()
