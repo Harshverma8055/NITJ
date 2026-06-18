@@ -13,6 +13,7 @@ export default function StudentDirectoryPage() {
     const [deptFilter, setDeptFilter] = useState('All Depts');
     const [yearFilter, setYearFilter] = useState('All Years');
     const [viewMode, setViewMode] = useState<'students' | 'staff'>('students');
+    const [visibleCount, setVisibleCount] = useState(24);
 
     const DEPARTMENTS = ['All Depts', 'BT', 'ChE', 'CE', 'CSE', 'DSE', 'EE', 'ECE', 'IPE', 'IT', 'ICE', 'MnC', 'ME', 'TT'];
     const YEARS = ['All Years', 'Year 1', 'Year 2', 'Year 3', 'Year 4'];
@@ -52,6 +53,10 @@ export default function StudentDirectoryPage() {
         const matchesYear = yearFilter === 'All Years' || `Year ${s.year}` === yearFilter;
         return matchesSearch && matchesDept && matchesYear;
     });
+
+    useEffect(() => {
+        setVisibleCount(24);
+    }, [search, deptFilter, yearFilter, viewMode]);
 
     return (
         <div style={{ maxWidth: 1200, margin: '0 auto', color: 'white' }}>
@@ -163,17 +168,18 @@ export default function StudentDirectoryPage() {
 
             {/* Count */}
             <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.5)', marginBottom: 24 }}>
-                Showing 1-{Math.min(filteredData.length, 24)} of <strong>{viewMode === 'students' ? students.length : staff.length}</strong> {viewMode === 'students' ? 'students' : 'staff members'}
+                Showing 1-{Math.min(filteredData.length, visibleCount)} of <strong>{filteredData.length}</strong> {viewMode === 'students' ? 'students' : 'staff members'}
             </div>
 
             {/* Grid */}
             {loading ? (
                 <div style={{ textAlign: 'center', padding: '40px 0' }}><div className="spinner"></div></div>
             ) : (
+                <>
                 <div style={{ 
                     display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 24 
                 }}>
-                    {filteredData.slice(0, 24).map((s: any) => (
+                    {filteredData.slice(0, visibleCount).map((s: any) => (
                         <div key={s.id} onClick={() => alert(`Profile viewing for ${s.user?.name || 'user'} is coming soon.`)} style={{
                             background: 'rgba(255,255,255,0.02)',
                             border: '1px solid rgba(255,255,255,0.05)',
@@ -242,6 +248,22 @@ export default function StudentDirectoryPage() {
                         </div>
                     ))}
                 </div>
+                {visibleCount < filteredData.length && (
+                    <div style={{ textAlign: 'center', marginTop: 32 }}>
+                        <button 
+                            onClick={() => setVisibleCount(v => v + 24)}
+                            style={{
+                                background: 'transparent', border: '1px solid rgba(255,255,255,0.2)', color: 'white',
+                                padding: '12px 24px', borderRadius: 8, fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s'
+                            }}
+                            onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
+                            onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                        >
+                            Load More
+                        </button>
+                    </div>
+                )}
+                </>
             )}
         </div>
     );

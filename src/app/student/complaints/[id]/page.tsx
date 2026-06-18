@@ -182,7 +182,7 @@ export default function StudentComplaintDetail({ params }: { params: Promise<{ i
                         <h1 style={{ margin: '0 0 8px', fontSize: 22, color: 'var(--text-primary)', lineHeight: 1.3 }}>{data.title}</h1>
                         {data.reporter && (
                             <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>
-                                Reported by {data.reporter.rollNumber || data.reporter.name || 'Student'}
+                                Reported by {data.reporter.name} ({data.reporter.rollNumber})
                             </span>
                         )}
                         {data.is_anonymous && (

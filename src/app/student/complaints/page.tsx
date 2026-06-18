@@ -8,6 +8,7 @@ export default function ComplaintsPage() {
     const router = useRouter();
     const [complaints, setComplaints] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
+    const [statusFilter, setStatusFilter] = useState<string>('ALL');
 
     useEffect(() => {
         fetch('/api/auth/me')
@@ -55,14 +56,34 @@ export default function ComplaintsPage() {
                 </div>
             )}
 
+            {/* Status Filters */}
+            <div style={{ display: 'flex', gap: 12, marginBottom: 24, overflowX: 'auto', paddingBottom: 8 }}>
+                {['ALL', 'PENDING_REVIEW', 'APPROVED', 'ASSIGNED', 'IN_PROGRESS', 'RESOLVED'].map(status => (
+                    <button 
+                        key={status}
+                        onClick={() => setStatusFilter(status)}
+                        style={{
+                            background: statusFilter === status ? '#6366f1' : 'rgba(255,255,255,0.05)',
+                            color: statusFilter === status ? 'white' : 'rgba(255,255,255,0.6)',
+                            border: '1px solid',
+                            borderColor: statusFilter === status ? '#6366f1' : 'rgba(255,255,255,0.1)',
+                            padding: '8px 16px', borderRadius: 20, fontSize: 13, fontWeight: 600,
+                            cursor: 'pointer', transition: 'all 0.2s', whiteSpace: 'nowrap'
+                        }}
+                    >
+                        {status === 'ALL' ? 'All Complaints' : status.replace('_', ' ')}
+                    </button>
+                ))}
+            </div>
+
             {/* List */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-                {complaints.length === 0 ? (
+                {complaints.filter(c => statusFilter === 'ALL' || c.status === statusFilter).length === 0 ? (
                     <div style={{ background: 'rgba(255,255,255,0.02)', padding: 40, borderRadius: 16, textAlign: 'center', color: 'rgba(255,255,255,0.4)', border: '1px dashed rgba(255,255,255,0.1)' }}>
-                        You haven't reported any issues yet.
+                        No complaints found for this status.
                     </div>
                 ) : (
-                    complaints.map(c => (
+                    complaints.filter(c => statusFilter === 'ALL' || c.status === statusFilter).map(c => (
                         <div 
                             key={c.id} 
                             onClick={() => router.push(`/student/complaints/${c.id}`)}

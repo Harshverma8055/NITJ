@@ -247,7 +247,18 @@ export async function POST(request: NextRequest) {
             // Handle image upload to Supabase storage if file is provided
             const media = formData.get('media') as File | null;
             if (media && media.size > 0) {
-                body.media_paths = [`/evidence-upload-${Date.now()}.jpg`];
+                const supabase = getSupabase();
+                const buffer = await media.arrayBuffer();
+                const fileName = `${Date.now()}_${media.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
+                
+                const { data, error } = await supabase.storage.from('complaints').upload(fileName, buffer, {
+                    contentType: media.type,
+                });
+                
+                if (!error && data) {
+                    const { data: publicData } = supabase.storage.from('complaints').getPublicUrl(data.path);
+                    body.media_paths = [publicData.publicUrl];
+                }
             }
         } else {
             body = await request.json();
