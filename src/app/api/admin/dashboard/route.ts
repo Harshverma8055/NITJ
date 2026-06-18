@@ -16,6 +16,13 @@ export async function GET() {
             .select('*', { count: 'exact', head: true })
             .neq('category', 'ANNOUNCEMENT');
 
+        // Pending Complaints
+        const { count: pendingComplaints } = await supabaseAdmin
+            .from('complaints')
+            .select('*', { count: 'exact', head: true })
+            .eq('status', 'PENDING_REVIEW')
+            .neq('category', 'ANNOUNCEMENT');
+
         // 5. Department Breakdown
         const { data: deptData } = await supabaseAdmin
             .from('students')
@@ -49,21 +56,28 @@ export async function GET() {
                 ),
                 status
             `)
-            .in('status', ['IN_PROGRESS', 'RESOLVED'])
             .not('reporter_student_id', 'is', null)
             .order('updated_at', { ascending: false })
             .limit(6);
 
-        const recentActivity = (recentComplaints || []).map(c => ({
-            student: (c.students as any)?.users?.name || 'Unknown Student',
-            action: c.status === 'RESOLVED' ? 'Issue Resolved' : 'Issue Approved',
-            date: new Date(c.updated_at || Date.now()).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })
-        }));
+        const recentActivity = (recentComplaints || []).map(c => {
+            let actionText = 'Submitted Issue';
+            if (c.status === 'APPROVED') actionText = 'Issue Approved';
+            if (c.status === 'IN_PROGRESS') actionText = 'Work Started';
+            if (c.status === 'RESOLVED') actionText = 'Issue Resolved';
+            
+            return {
+                student: (c.students as any)?.users?.name || 'Unknown Student',
+                action: actionText,
+                date: new Date(c.updated_at || Date.now()).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })
+            };
+        });
 
         return NextResponse.json({
             stats: {
                 totalStudents: totalStudents || 0,
-                totalComplaints: totalComplaints || 0
+                totalComplaints: totalComplaints || 0,
+                pendingComplaints: pendingComplaints || 0
             },
             departments: mappedDepartments,
             recentActivity

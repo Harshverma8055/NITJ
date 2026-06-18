@@ -20,8 +20,9 @@ export default function AdminDashboard() {
     }, []);
 
     const statsConfig = [
-        { title: 'Total Students', value: data?.stats?.totalStudents || 0, icon: <GraduationCap size={20} color="#fbbf24" />, bg: 'rgba(245,158,11,0.1)', border: 'rgba(99,102,241,0.5)' },
-        { title: 'Total Issues', value: data?.stats?.totalComplaints || 0, icon: <TrendingUp size={20} color="#3b82f6" />, bg: 'rgba(59,130,246,0.1)', border: 'rgba(255,255,255,0.05)' }
+        { title: 'Total Students', value: data?.stats?.totalStudents || 0, icon: <GraduationCap size={20} color="#fbbf24" />, bg: 'rgba(245,158,11,0.1)', border: 'rgba(245,158,11,0.3)' },
+        { title: 'Pending Issues', value: data?.stats?.pendingComplaints || 0, icon: <AlertTriangle size={20} color="#ef4444" />, bg: 'rgba(239,68,68,0.1)', border: 'rgba(239,68,68,0.5)', glow: true },
+        { title: 'Total Issues', value: data?.stats?.totalComplaints || 0, icon: <TrendingUp size={20} color="#3b82f6" />, bg: 'rgba(59,130,246,0.1)', border: 'rgba(59,130,246,0.3)' }
     ];
 
     const departments = data?.departments || [];
@@ -43,12 +44,12 @@ export default function AdminDashboard() {
             </div>
 
             {/* Stats Row */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 20, marginBottom: 32 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 20, marginBottom: 32 }}>
                 {statsConfig.map((s, i) => (
                     <div key={i} style={{ 
-                        background: '#0D0E12', border: `1px solid ${s.border}`, borderRadius: 20, padding: 24,
-                        boxShadow: i === 0 ? '0 8px 30px rgba(99,102,241,0.1)' : '0 4px 20px rgba(0,0,0,0.2)',
-                        display: 'flex', alignItems: 'center', gap: 20, transition: 'transform 0.2s', cursor: 'pointer'
+                        background: '#13151A', border: `1px solid ${s.border}`, borderRadius: 20, padding: 24,
+                        boxShadow: s.glow ? `0 8px 30px ${s.bg}` : '0 4px 20px rgba(0,0,0,0.2)',
+                        display: 'flex', alignItems: 'center', gap: 20, transition: 'transform 0.2s, box-shadow 0.2s', cursor: 'pointer'
                     }} onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-2px)'} onMouseLeave={e => e.currentTarget.style.transform = 'translateY(0)'}>
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 56, height: 56, borderRadius: 16, background: s.bg }}>
                             {s.icon}
@@ -117,13 +118,18 @@ export default function AdminDashboard() {
                         
                         {/* Table Body */}
                         <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
-                            {recentActivity.map((r: any, i: number) => (
+                            {recentActivity.length > 0 ? recentActivity.map((r: any, i: number) => (
                                 <div key={i} style={{ display: 'grid', gridTemplateColumns: '2fr 2fr 1fr', padding: '16px 0', borderBottom: i < recentActivity.length - 1 ? '1px solid rgba(255,255,255,0.05)' : 'none', alignItems: 'center', fontSize: 13 }}>
                                     <div style={{ fontWeight: 600, color: 'rgba(255,255,255,0.9)' }}>{r.student}</div>
                                     <div style={{ color: '#10b981', fontWeight: 600 }}>{r.action}</div>
                                     <div style={{ color: 'rgba(255,255,255,0.4)' }}>{r.date}</div>
                                 </div>
-                            ))}
+                            )) : (
+                                <div style={{ padding: '40px 0', textAlign: 'center', color: 'rgba(255,255,255,0.4)', fontSize: 14 }}>
+                                    <div style={{ fontSize: 32, marginBottom: 12 }}>📋</div>
+                                    No recent activity found.
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>

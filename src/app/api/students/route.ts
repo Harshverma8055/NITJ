@@ -25,7 +25,7 @@ export async function GET(request: Request) {
         // For 1100 students, returning all of them is around 100kb, perfectly fine for client-side filtering.
         // But let's let the DB do it if we want.
         
-        const { data, error } = await query.order('roll_number', { ascending: true }).limit(200);
+        const { data, error } = await query.order('roll_number', { ascending: true }).limit(2000);
 
         if (error) {
             console.error("DB Error:", error);

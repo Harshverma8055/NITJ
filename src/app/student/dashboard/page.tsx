@@ -52,22 +52,45 @@ export default function StudentDashboard() {
 
             {/* Pulse Banner */}
             <div style={{
-                background: '#0D0E12',
-                border: '1px solid rgba(255,255,255,0.03)',
+                background: 'linear-gradient(135deg, rgba(99,102,241,0.1) 0%, rgba(139,92,246,0.1) 100%)',
+                border: '1px solid rgba(99,102,241,0.2)',
                 borderRadius: 24,
-                padding: '40px 20px',
+                padding: '40px',
                 display: 'flex',
-                justifyContent: 'center',
+                justifyContent: 'space-between',
                 alignItems: 'center',
                 marginBottom: 24,
                 position: 'relative',
-                overflow: 'hidden'
+                overflow: 'hidden',
+                flexWrap: 'wrap',
+                gap: 24
             }}>
-                <img 
-                    src="/pulse-logo.png" 
-                    alt="Pulse Rating" 
-                    style={{ height: 280, width: 'auto', objectFit: 'contain', filter: 'drop-shadow(0 0 40px rgba(99,102,241,0.2))' }} 
-                />
+                <div style={{ zIndex: 1, flex: '1 1 400px' }}>
+                    <h2 style={{ fontSize: 36, fontWeight: 800, margin: '0 0 16px 0', background: 'linear-gradient(to right, #818cf8, #c084fc)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+                        The Pulse Protocol
+                    </h2>
+                    <p style={{ fontSize: 16, color: 'rgba(255,255,255,0.7)', lineHeight: 1.6, margin: 0 }}>
+                        Earn discipline points by actively reporting infrastructure issues, verifying fixes, and contributing to a safer, cleaner campus environment. Your Pulse rating represents your impact.
+                    </p>
+                    <button 
+                        onClick={() => router.push('/about')}
+                        style={{ marginTop: 24, background: 'rgba(99,102,241,0.2)', border: '1px solid rgba(99,102,241,0.4)', padding: '10px 20px', borderRadius: 20, color: '#818cf8', fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s' }}
+                    >
+                        Learn More
+                    </button>
+                </div>
+                
+                <div style={{ zIndex: 1, display: 'flex', justifyContent: 'center', flex: '1 1 300px' }}>
+                    <img 
+                        src="/pulse-logo.png" 
+                        alt="Pulse Rating" 
+                        style={{ height: 220, width: 'auto', objectFit: 'contain', filter: 'drop-shadow(0 0 60px rgba(99,102,241,0.4))' }} 
+                    />
+                </div>
+
+                {/* Decorative background elements */}
+                <div style={{ position: 'absolute', top: -100, right: -50, width: 400, height: 400, background: 'radial-gradient(circle, rgba(99,102,241,0.15) 0%, transparent 70%)', filter: 'blur(40px)', zIndex: 0 }}></div>
+                <div style={{ position: 'absolute', bottom: -100, left: 100, width: 300, height: 300, background: 'radial-gradient(circle, rgba(139,92,246,0.1) 0%, transparent 70%)', filter: 'blur(40px)', zIndex: 0 }}></div>
             </div>
 
             {/* Stats Grid */}

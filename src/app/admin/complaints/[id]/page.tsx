@@ -1,28 +1,29 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { use, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft, Plus, Zap, MapPin, Clock, User, CheckCircle, Image as ImageIcon, Eye, Mic } from 'lucide-react';
 
-export default function AdminComplaintDetail({ params }: { params: { id: string } }) {
+export default function AdminComplaintDetail({ params }: { params: Promise<{ id: string }> }) {
+    const { id } = use(params);
     const router = useRouter();
     const [complaint, setComplaint] = useState<any>(null);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        fetch(`/api/admin/complaints/${params.id}`)
+        fetch(`/api/admin/complaints/${id}`)
             .then(res => res.json())
             .then(data => {
                 setComplaint(data.complaint || null);
                 setLoading(false);
             })
             .catch(() => setLoading(false));
-    }, [params.id]);
+    }, [id]);
 
     const handleApprove = async () => {
         if (!confirm('Are you sure you want to approve this issue and assign it to department staff?')) return;
         try {
-            const res = await fetch(`/api/admin/complaints/${params.id}`, {
+            const res = await fetch(`/api/admin/complaints/${id}`, {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ action: 'approve' })
@@ -40,21 +41,9 @@ export default function AdminComplaintDetail({ params }: { params: { id: string 
 
     if (loading) return <div style={{ display: 'flex', justifyContent: 'center', padding: 100 }}><div className="spinner"></div></div>;
 
-    // Use dummy data if API fails to load the exact structure from the screenshot
-    const c = complaint || {
-        id: '05e0b254-5c65-1bd0-b107-bef519e8aed0',
-        title: 'low lightinglow lightinglow lightinglow lightinglow lighting',
-        category: 'Electrical',
-        zone: 'Central Library • new library • 1st floor',
-        status: 'RESOLVED',
-        severity: 'MODERATE',
-        description: 'very less lightinglow lightinglow lightinglow lightinglow lightinglow lightinglow lightinglow lightinglow lightinglow lightinglow lightinglow lightinglow lightinglow lightinglow lightinglow lightinglow lightinglow lightinglow lightinglow lightinglow lightinglow lightinglow lightinglow lightinglow lightinglow lightinglow lightinglow lightinglow lightinglow lightinglow lightinglow lightinglow lightinglow lightinglow lightinglow lightinglow lightinglow lightinglow lightinglow lightinglow lightinglow lightinglow lightinglow lightinglow lightinglow lightinglow lightinglow lightinglow lightinglow lightinglow lightinglow lightinglow lightinglow lightinglow lightinglow lightinglow lighting',
-        created_at: '2026-11-06T10:15:00Z',
-        is_anonymous: false,
-        is_emergency: false,
-        upvotes: 0,
-        staff: { name: 'Rajesh Kumar Sharma', department: 'ELECTRICAL_MAINT' }
-    };
+    if (!complaint) return <div style={{ textAlign: 'center', marginTop: 100, color: 'white' }}>Complaint not found</div>;
+
+    const c = complaint;
 
     return (
         <div style={{ maxWidth: 1000, margin: '0 auto', color: 'white', paddingBottom: 60 }}>
