@@ -110,8 +110,8 @@ export default function AdminStudentsPage() {
             </div>
 
             {/* Filters */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 250px 100px 48px', gap: 16, marginBottom: 24 }}>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 16, marginBottom: 24 }}>
+                <div style={{ flex: '1 1 250px', display: 'flex', flexDirection: 'column', gap: 8 }}>
                     <label style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', fontWeight: 600 }}>Search</label>
                     <div style={{ position: 'relative' }}>
                         <Search size={16} color="rgba(255,255,255,0.4)" style={{ position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)' }} />
@@ -128,7 +128,7 @@ export default function AdminStudentsPage() {
                     </div>
                 </div>
 
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                <div style={{ flex: '1 1 200px', display: 'flex', flexDirection: 'column', gap: 8 }}>
                     <label style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', fontWeight: 600 }}>Department</label>
                     <select 
                         value={deptFilter}
@@ -142,7 +142,7 @@ export default function AdminStudentsPage() {
                     </select>
                 </div>
 
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                <div style={{ flex: '0 1 100px', display: 'flex', flexDirection: 'column', gap: 8 }}>
                     <label style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', fontWeight: 600 }}>Year</label>
                     <select 
                         value={yearFilter}
@@ -176,7 +176,7 @@ export default function AdminStudentsPage() {
                 </div>
 
                 <div style={{ width: '100%', overflowX: 'auto' }}>
-                    <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', minWidth: 900 }}>
+                    <table className="data-table" style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
                         <thead>
                             <tr style={{ color: 'rgba(255,255,255,0.4)', fontSize: 11, letterSpacing: 1, borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
                                 <th style={{ padding: '16px 24px', fontWeight: 600 }}>NAME</th>
@@ -198,16 +198,16 @@ export default function AdminStudentsPage() {
                                 </tr>
                             ) : filteredStudents.map((s, i) => (
                                 <tr key={s.id} style={{ borderBottom: i < filteredStudents.length - 1 ? '1px solid rgba(255,255,255,0.05)' : 'none', fontSize: 13 }}>
-                                    <td style={{ padding: '16px 24px', fontWeight: 600 }}>{s.name}</td>
-                                    <td style={{ padding: '16px 24px', color: 'rgba(255,255,255,0.6)' }}>{s.email}</td>
-                                    <td style={{ padding: '16px 24px' }}>
+                                    <td data-label="NAME" style={{ padding: '16px 24px', fontWeight: 600 }}>{s.name}</td>
+                                    <td data-label="EMAIL" style={{ padding: '16px 24px', color: 'rgba(255,255,255,0.6)' }}>{s.email}</td>
+                                    <td data-label="ROLL NO." style={{ padding: '16px 24px' }}>
                                         <div style={{ background: 'rgba(139, 92, 246, 0.1)', color: '#a78bfa', padding: '2px 8px', borderRadius: 12, display: 'inline-block', fontSize: 11, fontWeight: 600 }}>
                                             {s.roll}
                                         </div>
                                     </td>
-                                    <td style={{ padding: '16px 24px', color: 'rgba(255,255,255,0.8)' }}>{s.dept}</td>
-                                    <td style={{ padding: '16px 24px' }}>{s.year}</td>
-                                    <td style={{ padding: '16px 24px' }}>
+                                    <td data-label="DEPARTMENT" style={{ padding: '16px 24px', color: 'rgba(255,255,255,0.8)' }}>{s.dept}</td>
+                                    <td data-label="YEAR" style={{ padding: '16px 24px' }}>{s.year}</td>
+                                    <td data-label="ACTIONS" style={{ padding: '16px 24px' }}>
                                         <div style={{ display: 'flex', gap: 8 }}>
                                             <button onClick={() => alert('Edit feature coming soon.')} style={{ width: 28, height: 28, borderRadius: '50%', background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
                                                 <Edit2 size={12} />

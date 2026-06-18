@@ -49,32 +49,42 @@ export default function AdminAuditPage() {
                     <p>System events will be recorded here once they occur (Make sure the table is created!)</p>
                 </div>
             ) : (
-                <div style={{ background: '#13151a', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 12, overflow: 'hidden' }}>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 2fr 1fr 1fr', padding: '16px 24px', background: 'rgba(255,255,255,0.02)', borderBottom: '1px solid rgba(255,255,255,0.05)', color: 'rgba(255,255,255,0.5)', fontSize: 12, fontWeight: 600, letterSpacing: 1 }}>
-                        <div>ACTION</div>
-                        <div>DETAILS</div>
-                        <div>ADMIN</div>
-                        <div>TIMESTAMP</div>
-                    </div>
-                    <div style={{ display: 'flex', flexDirection: 'column' }}>
-                        {logs.map((log) => (
-                            <div key={log.id} style={{ display: 'grid', gridTemplateColumns: '1.5fr 2fr 1fr 1fr', padding: '16px 24px', borderBottom: '1px solid rgba(255,255,255,0.02)', alignItems: 'center', fontSize: 14 }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: 12, fontWeight: 600 }}>
-                                    {getActionIcon(log.action)}
-                                    {log.action.replace('_', ' ')}
-                                </div>
-                                <div style={{ color: 'rgba(255,255,255,0.6)', fontSize: 13, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', paddingRight: 16 }}>
-                                    {log.details || '-'}
-                                </div>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'rgba(255,255,255,0.8)' }}>
-                                    <User size={14} color="#8b5cf6" /> {log.admin_name}
-                                </div>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'rgba(255,255,255,0.4)', fontSize: 12 }}>
-                                    <Clock size={12} /> {new Date(log.created_at).toLocaleString()}
-                                </div>
-                            </div>
-                        ))}
-                    </div>
+                <div style={{ background: '#13151a', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 12, overflowX: 'auto' }}>
+                    <table className="data-table" style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+                        <thead>
+                            <tr style={{ background: 'rgba(255,255,255,0.02)', borderBottom: '1px solid rgba(255,255,255,0.05)', color: 'rgba(255,255,255,0.5)', fontSize: 12, fontWeight: 600, letterSpacing: 1 }}>
+                                <th style={{ padding: '16px 24px' }}>ACTION</th>
+                                <th style={{ padding: '16px 24px' }}>DETAILS</th>
+                                <th style={{ padding: '16px 24px' }}>ADMIN</th>
+                                <th style={{ padding: '16px 24px' }}>TIMESTAMP</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {logs.map((log) => (
+                                <tr key={log.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.02)', fontSize: 14 }}>
+                                    <td data-label="ACTION" style={{ padding: '16px 24px' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: 12, fontWeight: 600 }}>
+                                            {getActionIcon(log.action)}
+                                            {log.action.replace('_', ' ')}
+                                        </div>
+                                    </td>
+                                    <td data-label="DETAILS" style={{ padding: '16px 24px', color: 'rgba(255,255,255,0.6)', fontSize: 13, maxWidth: 300, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                        {log.details || '-'}
+                                    </td>
+                                    <td data-label="ADMIN" style={{ padding: '16px 24px' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'rgba(255,255,255,0.8)' }}>
+                                            <User size={14} color="#8b5cf6" /> {log.admin_name}
+                                        </div>
+                                    </td>
+                                    <td data-label="TIMESTAMP" style={{ padding: '16px 24px' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'rgba(255,255,255,0.4)', fontSize: 12 }}>
+                                            <Clock size={12} /> {new Date(log.created_at).toLocaleString()}
+                                        </div>
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
                 </div>
             )}
         </div>

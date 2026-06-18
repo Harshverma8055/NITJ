@@ -32,11 +32,9 @@ export default function NewComplaintPage() {
     const [error, setError] = useState('');
 
     const STEPS = [
-        { num: 1, title: 'Category & Severity' },
-        { num: 2, title: 'Location' },
-        { num: 3, title: 'Details' },
-        { num: 4, title: 'Evidence' },
-        { num: 5, title: 'Review & Submit' }
+        { num: 1, title: 'Photo' },
+        { num: 2, title: 'Details' },
+        { num: 3, title: 'Review' }
     ];
 
     const captureLocation = () => {
@@ -130,20 +128,15 @@ export default function NewComplaintPage() {
     };
 
     const nextStep = () => {
-        if (step === 1 && (!category || !severity)) {
-            setError('Please select a category and severity');
-            return;
+        if (step === 1 && !mediaFile) {
+            // allow skipping photo but maybe warn? Let's just proceed
         }
-        if (step === 2 && !zone) {
-            setError('Please select a campus zone');
-            return;
-        }
-        if (step === 3 && (!title || !description)) {
-            setError('Please provide a title and detailed description');
+        if (step === 2 && (!category || !zone || !title)) {
+            setError('Please fill in category, zone, and title.');
             return;
         }
         setError('');
-        setStep(s => Math.min(5, s + 1));
+        setStep(s => Math.min(3, s + 1));
     };
 
     const prevStep = () => setStep(s => Math.max(1, s - 1));
@@ -231,13 +224,122 @@ export default function NewComplaintPage() {
             {/* Form Container */}
             <div style={{ background: '#13151A', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 24, padding: 40, position: 'relative', overflow: 'hidden' }}>
                 
-                {/* Step 1: Category & Severity */}
+                {/* Step 1: Evidence & Photo */}
                 {step === 1 && (
                     <div className="animate-fade-in">
-                        <h2 style={{ fontSize: 22, fontWeight: 700, margin: '0 0 24px 0' }}>Category & Urgency</h2>
+                        <h2 style={{ fontSize: 22, fontWeight: 700, margin: '0 0 24px 0', display: 'flex', alignItems: 'center', gap: 8 }}>
+                            <Camera size={24} color="#6366f1" /> Take Photo First
+                        </h2>
+                        <p style={{ color: 'rgba(255,255,255,0.6)', marginBottom: 16, fontSize: 15 }}>
+                            Tap below to take a photo of the issue or upload from gallery.
+                        </p>
+
+                        <div style={{ 
+                            border: '2px dashed rgba(255,255,255,0.2)', borderRadius: 24, padding: previewUrl ? 32 : 60,
+                            display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                            background: 'rgba(255,255,255,0.02)', position: 'relative', cursor: compressing ? 'wait' : 'pointer',
+                            marginBottom: 24
+                        }}>
+                            <input 
+                                type="file" accept="image/*,video/*" capture="environment"
+                                style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', opacity: 0, cursor: compressing ? 'wait' : 'pointer' }}
+                                onChange={handleFileChange}
+                                disabled={compressing}
+                            />
+                            {compressing ? (
+                                <div style={{ textAlign: 'center' }}>
+                                    <div className="spinner" style={{ margin: '0 auto 16px' }}></div>
+                                    <div style={{ color: '#818cf8', fontWeight: 600, fontSize: 16 }}>Compressing image...</div>
+                                </div>
+                            ) : previewUrl ? (
+                                <div style={{ textAlign: 'center', width: '100%' }}>
+                                    <img src={previewUrl} alt="Preview" style={{ maxWidth: '100%', maxHeight: 200, borderRadius: 12, marginBottom: 16 }} />
+                                    <div style={{ color: '#818cf8', fontWeight: 600 }}>{mediaFile?.name}</div>
+                                    <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: 13, marginTop: 8 }}>Tap to retake</div>
+                                </div>
+                            ) : (
+                                <div style={{ textAlign: 'center', pointerEvents: 'none' }}>
+                                    <Camera size={48} color="rgba(255,255,255,0.2)" style={{ margin: '0 auto 16px' }} />
+                                    <div style={{ fontSize: 18, color: 'white', fontWeight: 600, marginBottom: 8 }}><span style={{ color: '#818cf8' }}>Tap to capture</span> or browse</div>
+                                </div>
+                            )}
+                        </div>
                         
+                        <div style={{ background: 'rgba(16,185,129,0.05)', border: '1px dashed rgba(16,185,129,0.3)', borderRadius: 16, padding: 20, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <div>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 15, fontWeight: 600, marginBottom: 4, color: '#10b981' }}>
+                                    <MapPin size={18} /> GPS Auto-Capture
+                                </div>
+                                <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.5)' }}>
+                                    {locationStatus || 'Optional but recommended.'}
+                                </div>
+                            </div>
+                            <button type="button" onClick={captureLocation} style={{ background: gpsLat ? '#10b981' : 'transparent', color: gpsLat ? 'white' : '#10b981', border: `1px solid ${gpsLat ? '#10b981' : 'rgba(16,185,129,0.5)'}`, padding: '10px 20px', borderRadius: 12, cursor: 'pointer', fontWeight: 600, transition: 'all 0.2s' }}>
+                                {gpsLat ? 'Captured ✓' : 'Detect'}
+                            </button>
+                        </div>
+                    </div>
+                )}
+
+                {/* Step 2: Details & Location */}
+                {step === 2 && (
+                    <div className="animate-fade-in">
+                        <div style={{ marginBottom: 24 }}>
+                            <label style={{ display: 'block', marginBottom: 8, fontSize: 14, color: 'rgba(255,255,255,0.7)', fontWeight: 600 }}>Issue Title *</label>
+                            <input 
+                                type="text" maxLength={200}
+                                style={{ width: '100%', padding: '16px 20px', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12, color: 'white', outline: 'none', fontSize: 15 }}
+                                placeholder="Short description (e.g. Broken AC)"
+                                value={title} onChange={(e) => setTitle(e.target.value)} required
+                            />
+                        </div>
+
+                        <div className="two-col-grid" style={{ marginBottom: 24 }}>
+                            <div>
+                                <label style={{ display: 'block', marginBottom: 8, fontSize: 14, color: 'rgba(255,255,255,0.7)', fontWeight: 600 }}>Category *</label>
+                                <select 
+                                    style={{ width: '100%', padding: '16px 20px', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12, color: 'white', outline: 'none', appearance: 'none', fontSize: 15 }}
+                                    value={category} onChange={(e) => setCategory(e.target.value)} required
+                                >
+                                    <option value="" disabled>-- Select --</option>
+                                    <option value="IT_NETWORK">IT & Network</option>
+                                    <option value="ELECTRICAL">Electrical & AC</option>
+                                    <option value="PLUMBING">Plumbing & Water</option>
+                                    <option value="CIVIL">Civil Works</option>
+                                    <option value="SANITATION">Sanitation</option>
+                                    <option value="FURNITURE">Furniture</option>
+                                    <option value="EQUIPMENT">Equipment</option>
+                                    <option value="SAFETY">Safety & Security</option>
+                                    <option value="HOSTEL">Hostel & Mess</option>
+                                    <option value="OTHER">Other</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label style={{ display: 'block', marginBottom: 8, fontSize: 14, color: 'rgba(255,255,255,0.7)', fontWeight: 600 }}>Zone *</label>
+                                <select 
+                                    style={{ width: '100%', padding: '16px 20px', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12, color: 'white', outline: 'none', appearance: 'none', fontSize: 15 }}
+                                    value={zone} onChange={(e) => setZone(e.target.value)} required
+                                >
+                                    <option value="" disabled>-- Select Zone --</option>
+                                    <option value="ACADEMIC_BLOCK">Academic Block</option>
+                                    <option value="HOSTEL_BOYS">Boys Hostel Area</option>
+                                    <option value="HOSTEL_GIRLS">Girls Hostel Area</option>
+                                    <option value="LIBRARY">Central Library</option>
+                                    <option value="LAB">Laboratories</option>
+                                    <option value="SPORTS_COMPLEX">Sports Complex</option>
+                                    <option value="CAFETERIA">Cafeteria</option>
+                                    <option value="OTHER">Other Location</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div style={{ marginBottom: 24 }}>
+                            <label style={{ display: 'block', marginBottom: 8, fontSize: 14, color: 'rgba(255,255,255,0.7)', fontWeight: 600 }}>Exact Location</label>
+                            <input type="text" placeholder="e.g. Block A, Room 204" value={building} onChange={e => setBuilding(e.target.value)} style={{ width: '100%', padding: '16px 20px', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12, color: 'white', outline: 'none' }} />
+                        </div>
+
                         <label style={{ 
-                            display: 'flex', alignItems: 'center', gap: 12, padding: 20, borderRadius: 16, cursor: 'pointer',
+                            display: 'flex', alignItems: 'center', gap: 12, padding: 16, borderRadius: 12, cursor: 'pointer',
                             background: isEmergency ? 'rgba(239,68,68,0.1)' : 'rgba(255,255,255,0.02)',
                             border: `1px solid ${isEmergency ? 'rgba(239,68,68,0.3)' : 'rgba(255,255,255,0.05)'}`,
                             marginBottom: 24, transition: 'all 0.2s'
@@ -247,221 +349,14 @@ export default function NewComplaintPage() {
                                 <div style={{ color: isEmergency ? '#ef4444' : 'white', fontWeight: 600, fontSize: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
                                     🚨 Mark as EMERGENCY
                                 </div>
-                                <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: 13, marginTop: 4 }}>Safety hazard / immediate risk to life or property</div>
                             </div>
                         </label>
 
-                        <div style={{ marginBottom: 32 }}>
-                            <label style={{ display: 'block', marginBottom: 12, fontSize: 14, color: 'rgba(255,255,255,0.7)', fontWeight: 600 }}>Issue Category *</label>
-                            <select 
-                                style={{ width: '100%', padding: '16px 20px', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12, color: 'white', outline: 'none', appearance: 'none', fontSize: 15 }}
-                                value={category} onChange={(e) => setCategory(e.target.value)} required
-                            >
-                                <option value="" disabled>-- Select Category --</option>
-                                <option value="IT_NETWORK">IT & Network</option>
-                                <option value="ELECTRICAL">Electrical & AC</option>
-                                <option value="PLUMBING">Plumbing & Water</option>
-                                <option value="CIVIL">Civil Works (Walls, Floors)</option>
-                                <option value="SANITATION">Sanitation & Cleaning</option>
-                                <option value="FURNITURE">Furniture & Fixtures</option>
-                                <option value="EQUIPMENT">Lab/Office Equipment</option>
-                                <option value="SAFETY">Safety & Security</option>
-                                <option value="HOSTEL">Hostel & Mess</option>
-                                <option value="SPORTS">Sports & Recreation</option>
-                                <option value="CAFETERIA">Cafeteria</option>
-                                <option value="OTHER">Other Issues</option>
-                            </select>
-                        </div>
-
-                        <div>
-                            <label style={{ display: 'block', marginBottom: 12, fontSize: 14, color: 'rgba(255,255,255,0.7)', fontWeight: 600 }}>Severity Level *</label>
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-                                {[
-                                    { id: 'LOW', label: 'LOW', desc: 'Minor inconvenience', color: '#10b981' },
-                                    { id: 'MODERATE', label: 'MODERATE', desc: 'Affects daily use', color: '#f59e0b' },
-                                    { id: 'HIGH', label: 'HIGH', desc: 'Major disruption', color: '#f97316' },
-                                    { id: 'CRITICAL', label: 'CRITICAL', desc: 'Dangerous condition', color: '#ef4444' }
-                                ].map(sev => (
-                                    <div 
-                                        key={sev.id} onClick={() => setSeverity(sev.id)}
-                                        style={{ 
-                                            padding: 20, borderRadius: 12, cursor: 'pointer',
-                                            background: severity === sev.id ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.2)',
-                                            border: `1px solid ${severity === sev.id ? sev.color : 'rgba(255,255,255,0.05)'}`,
-                                            transition: 'all 0.2s'
-                                        }}
-                                    >
-                                        <div style={{ color: sev.color, fontWeight: 700, marginBottom: 4 }}>{sev.label}</div>
-                                        <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: 13 }}>{sev.desc}</div>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
                     </div>
                 )}
 
-                {/* Step 2: Location */}
-                {step === 2 && (
-                    <div className="animate-fade-in">
-                        <h2 style={{ fontSize: 22, fontWeight: 700, margin: '0 0 24px 0', display: 'flex', alignItems: 'center', gap: 8 }}>
-                            <MapPin size={24} color="#6366f1" /> Location Details
-                        </h2>
-
-                        <div style={{ marginBottom: 24 }}>
-                            <label style={{ display: 'block', marginBottom: 12, fontSize: 14, color: 'rgba(255,255,255,0.7)', fontWeight: 600 }}>Campus Zone *</label>
-                            <select 
-                                style={{ width: '100%', padding: '16px 20px', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12, color: 'white', outline: 'none', appearance: 'none', fontSize: 15 }}
-                                value={zone} onChange={(e) => setZone(e.target.value)} required
-                            >
-                                <option value="" disabled>-- Select Zone --</option>
-                                <option value="ACADEMIC_BLOCK">Academic Block</option>
-                                <option value="HOSTEL_BOYS">Boys Hostel Area</option>
-                                <option value="HOSTEL_GIRLS">Girls Hostel Area</option>
-                                <option value="LIBRARY">Central Library</option>
-                                <option value="LAB">Laboratories</option>
-                                <option value="SPORTS_COMPLEX">Sports Complex</option>
-                                <option value="CAFETERIA">Cafeteria</option>
-                                <option value="PARKING">Parking Area</option>
-                                <option value="ROAD">Campus Roads</option>
-                                <option value="MAIN_GATE">Main Gate</option>
-                                <option value="AUDITORIUM">Auditorium</option>
-                                <option value="ADMIN_BLOCK">Admin Block</option>
-                                <option value="OTHER">Other Location</option>
-                            </select>
-                        </div>
-
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16, marginBottom: 24 }}>
-                            <div>
-                                <label style={{ display: 'block', marginBottom: 12, fontSize: 14, color: 'rgba(255,255,255,0.7)', fontWeight: 600 }}>Building / Block</label>
-                                <input type="text" placeholder="e.g. Block A" value={building} onChange={e => setBuilding(e.target.value)} style={{ width: '100%', padding: '14px 16px', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12, color: 'white', outline: 'none' }} />
-                            </div>
-                            <div>
-                                <label style={{ display: 'block', marginBottom: 12, fontSize: 14, color: 'rgba(255,255,255,0.7)', fontWeight: 600 }}>Floor</label>
-                                <input type="text" placeholder="e.g. 2nd Floor" value={floor} onChange={e => setFloor(e.target.value)} style={{ width: '100%', padding: '14px 16px', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12, color: 'white', outline: 'none' }} />
-                            </div>
-                            <div>
-                                <label style={{ display: 'block', marginBottom: 12, fontSize: 14, color: 'rgba(255,255,255,0.7)', fontWeight: 600 }}>Room / Area</label>
-                                <input type="text" placeholder="e.g. Room 204" value={room} onChange={e => setRoom(e.target.value)} style={{ width: '100%', padding: '14px 16px', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12, color: 'white', outline: 'none' }} />
-                            </div>
-                        </div>
-
-                        <div style={{ background: 'rgba(16,185,129,0.05)', border: '1px dashed rgba(16,185,129,0.3)', borderRadius: 16, padding: 24, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <div>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 15, fontWeight: 600, marginBottom: 4, color: '#10b981' }}>
-                                    <MapPin size={18} /> GPS Auto-Capture
-                                </div>
-                                <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.5)' }}>
-                                    {locationStatus || 'Optional but highly recommended for outdoor issues.'}
-                                </div>
-                            </div>
-                            <button type="button" onClick={captureLocation} style={{ background: gpsLat ? '#10b981' : 'transparent', color: gpsLat ? 'white' : '#10b981', border: `1px solid ${gpsLat ? '#10b981' : 'rgba(16,185,129,0.5)'}`, padding: '10px 20px', borderRadius: 12, cursor: 'pointer', fontWeight: 600, transition: 'all 0.2s' }}>
-                                {gpsLat ? 'Captured ✓' : 'Detect Location'}
-                            </button>
-                        </div>
-                    </div>
-                )}
-
-                {/* Step 3: Details */}
+                {/* Step 3: Review */}
                 {step === 3 && (
-                    <div className="animate-fade-in">
-                        <h2 style={{ fontSize: 22, fontWeight: 700, margin: '0 0 24px 0', display: 'flex', alignItems: 'center', gap: 8 }}>
-                            📄 Issue Details
-                        </h2>
-
-                        <div style={{ marginBottom: 24 }}>
-                            <label style={{ display: 'block', marginBottom: 12, fontSize: 14, color: 'rgba(255,255,255,0.7)', fontWeight: 600 }}>Title * ({title.length}/200)</label>
-                            <input 
-                                type="text" maxLength={200}
-                                style={{ width: '100%', padding: '16px 20px', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12, color: 'white', outline: 'none', fontSize: 15 }}
-                                placeholder="Short, clear description of the problem"
-                                value={title} onChange={(e) => setTitle(e.target.value)} required
-                            />
-                        </div>
-
-                        <div style={{ marginBottom: 24 }}>
-                            <label style={{ display: 'block', marginBottom: 12, fontSize: 14, color: 'rgba(255,255,255,0.7)', fontWeight: 600 }}>Description * ({description.length}/2000)</label>
-                            <textarea 
-                                style={{ width: '100%', padding: '16px 20px', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12, color: 'white', outline: 'none', minHeight: 160, resize: 'vertical', fontSize: 15 }}
-                                placeholder="Describe the issue in detail: what is damaged, when you noticed it, how it affects students..."
-                                value={description} onChange={(e) => setDescription(e.target.value)} required
-                            />
-                        </div>
-
-                        <label style={{ 
-                            display: 'flex', alignItems: 'center', gap: 12, padding: 20, borderRadius: 16, cursor: 'pointer',
-                            background: isAnonymous ? 'rgba(99,102,241,0.1)' : 'rgba(255,255,255,0.02)',
-                            border: `1px solid ${isAnonymous ? 'rgba(99,102,241,0.3)' : 'rgba(255,255,255,0.05)'}`,
-                            transition: 'all 0.2s'
-                        }}>
-                            <input type="checkbox" checked={isAnonymous} onChange={(e) => setIsAnonymous(e.target.checked)} style={{ width: 24, height: 24, accentColor: '#6366f1' }} />
-                            <div>
-                                <div style={{ color: isAnonymous ? '#818cf8' : 'white', fontWeight: 600, fontSize: 15 }}>
-                                    Submit Anonymously
-                                </div>
-                                <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: 13, marginTop: 4 }}>Your name won't be shown publicly</div>
-                            </div>
-                        </label>
-                    </div>
-                )}
-
-                {/* Step 4: Evidence */}
-                {step === 4 && (
-                    <div className="animate-fade-in">
-                        <h2 style={{ fontSize: 22, fontWeight: 700, margin: '0 0 24px 0', display: 'flex', alignItems: 'center', gap: 8 }}>
-                            <ImageIcon size={24} color="#6366f1" /> Upload Evidence
-                        </h2>
-                        <p style={{ color: 'rgba(255,255,255,0.6)', marginBottom: 16, fontSize: 15 }}>
-                            Attach photos/videos of the issue. Images are auto-compressed to save storage. Optional but strongly recommended.
-                        </p>
-
-                        <div style={{ 
-                            border: '2px dashed rgba(255,255,255,0.2)', borderRadius: 24, padding: previewUrl ? 32 : 60,
-                            display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-                            background: 'rgba(255,255,255,0.02)', position: 'relative', cursor: compressing ? 'wait' : 'pointer'
-                        }}>
-                            <input 
-                                type="file" accept="image/*,video/*" 
-                                style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', opacity: 0, cursor: compressing ? 'wait' : 'pointer' }}
-                                onChange={handleFileChange}
-                                disabled={compressing}
-                            />
-                            {compressing ? (
-                                <div style={{ textAlign: 'center' }}>
-                                    <div className="spinner" style={{ margin: '0 auto 16px' }}></div>
-                                    <div style={{ color: '#818cf8', fontWeight: 600, fontSize: 16 }}>Compressing image...</div>
-                                    <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: 13, marginTop: 8 }}>Optimizing for storage</div>
-                                </div>
-                            ) : previewUrl ? (
-                                <div style={{ textAlign: 'center', width: '100%' }}>
-                                    <img src={previewUrl} alt="Preview" style={{ maxWidth: '100%', maxHeight: 200, borderRadius: 12, marginBottom: 16 }} />
-                                    <div style={{ color: '#818cf8', fontWeight: 600 }}>{mediaFile?.name}</div>
-                                    {originalSize > 0 && compressedSize > 0 && originalSize !== compressedSize && (
-                                        <div style={{ 
-                                            display: 'inline-flex', alignItems: 'center', gap: 8, marginTop: 12,
-                                            background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.2)',
-                                            padding: '8px 16px', borderRadius: 20, fontSize: 13
-                                        }}>
-                                            <span style={{ color: 'rgba(255,255,255,0.5)', textDecoration: 'line-through' }}>{formatFileSize(originalSize)}</span>
-                                            <span style={{ color: 'rgba(255,255,255,0.3)' }}>→</span>
-                                            <span style={{ color: '#10b981', fontWeight: 700 }}>{formatFileSize(compressedSize)}</span>
-                                            <span style={{ color: '#10b981', fontWeight: 600 }}>({Math.round((1 - compressedSize / originalSize) * 100)}% saved)</span>
-                                        </div>
-                                    )}
-                                    <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: 13, marginTop: 8 }}>Click to change file</div>
-                                </div>
-                            ) : (
-                                <div style={{ textAlign: 'center', pointerEvents: 'none' }}>
-                                    <Camera size={48} color="rgba(255,255,255,0.2)" style={{ margin: '0 auto 16px' }} />
-                                    <div style={{ fontSize: 18, color: 'white', fontWeight: 600, marginBottom: 8 }}>Drop files here or <span style={{ color: '#818cf8' }}>click to browse</span></div>
-                                    <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: 14 }}>Images auto-compressed • 0/1 files added</div>
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                )}
-
-                {/* Step 5: Review */}
-                {step === 5 && (
                     <div className="animate-fade-in">
                         <h2 style={{ fontSize: 22, fontWeight: 700, margin: '0 0 24px 0', display: 'flex', alignItems: 'center', gap: 8 }}>
                             👁️ Review Your Complaint
@@ -501,9 +396,9 @@ export default function NewComplaintPage() {
                                 <div style={{ color: 'white', fontSize: 15 }}>{mediaFile ? '1 file attached' : '0 files attached'}</div>
                             </div>
                             <div style={{ padding: 20 }}>
-                                <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: 14, fontWeight: 600, marginBottom: 8 }}>Description:</div>
-                                <div style={{ color: 'white', fontSize: 15, lineHeight: 1.6, whiteSpace: 'pre-wrap', background: 'rgba(0,0,0,0.2)', padding: 16, borderRadius: 12 }}>
-                                    {description}
+                                <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: 14, fontWeight: 600, marginBottom: 8 }}>GPS Coords:</div>
+                                <div style={{ color: 'white', fontSize: 15 }}>
+                                    {gpsLat ? `${gpsLat}, ${gpsLng}` : 'Not captured'}
                                 </div>
                             </div>
                         </div>
@@ -526,7 +421,7 @@ export default function NewComplaintPage() {
                         </button>
                     )}
                     
-                    {step < 5 ? (
+                    {step < 3 ? (
                         <button 
                             type="button" onClick={nextStep}
                             style={{ 

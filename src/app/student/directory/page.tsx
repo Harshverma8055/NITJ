@@ -163,7 +163,7 @@ export default function StudentDirectoryPage() {
             ) : (
                 <div style={{ background: '#13151A', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 16, overflow: 'hidden' }}>
                     <div style={{ width: '100%', overflowX: 'auto' }}>
-                        <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', minWidth: 900 }}>
+                        <table className="data-table" style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
                             <thead>
                                 <tr style={{ color: 'rgba(255,255,255,0.4)', fontSize: 11, letterSpacing: 1, borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
                                     <th style={{ padding: '16px 24px', fontWeight: 600 }}>NAME</th>
@@ -183,7 +183,7 @@ export default function StudentDirectoryPage() {
                                         onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.02)'}
                                         onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
                                     >
-                                        <td style={{ padding: '16px 24px', display: 'flex', alignItems: 'center', gap: 12 }}>
+                                        <td data-label="NAME" style={{ padding: '16px 24px', display: 'flex', alignItems: 'center', gap: 12 }}>
                                             <div style={{
                                                 width: 32, height: 32, borderRadius: '50%',
                                                 background: 'rgba(99, 102, 241, 0.1)',
@@ -195,20 +195,20 @@ export default function StudentDirectoryPage() {
                                             </div>
                                             <span style={{ fontWeight: 600 }}>{s.user?.name || 'User Name'}</span>
                                         </td>
-                                        <td style={{ padding: '16px 24px' }}>
+                                        <td data-label="ROLL NO." style={{ padding: '16px 24px' }}>
                                             <div style={{ background: 'rgba(139, 92, 246, 0.1)', color: '#a78bfa', padding: '2px 8px', borderRadius: 12, display: 'inline-block', fontSize: 11, fontWeight: 600 }}>
                                                 {s.roll_number}
                                             </div>
                                         </td>
-                                        <td style={{ padding: '16px 24px', color: 'rgba(255,255,255,0.8)' }}>
+                                        <td data-label="DEPARTMENT" style={{ padding: '16px 24px', color: 'rgba(255,255,255,0.8)' }}>
                                             <span style={{ color: '#60a5fa', fontWeight: 600 }}>
                                                 {getMappedDept(s.department)}
                                             </span>
                                         </td>
-                                        <td style={{ padding: '16px 24px', color: 'rgba(255,255,255,0.6)' }}>
+                                        <td data-label="YEAR" style={{ padding: '16px 24px', color: 'rgba(255,255,255,0.6)' }}>
                                             Year {s.year || 1}
                                         </td>
-                                        <td style={{ padding: '16px 24px' }}>
+                                        <td data-label="PULSE" style={{ padding: '16px 24px' }}>
                                             <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#10b981', fontWeight: 700 }}>
                                                 <Star size={14} fill="#10b981" /> {s.rating || 0}
                                             </div>

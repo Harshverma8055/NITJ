@@ -86,6 +86,7 @@ export default function ComplaintsPage() {
                     complaints.filter(c => statusFilter === 'ALL' || c.status === statusFilter).map(c => (
                         <div 
                             key={c.id} 
+                            className="complaint-card"
                             onClick={() => router.push(`/student/complaints/${c.id}`)}
                             style={{ 
                                 background: 'rgba(255,255,255,0.02)', padding: '24px', 
@@ -111,7 +112,7 @@ export default function ComplaintsPage() {
                                 </div>
                                 <div>
                                     <h3 style={{ margin: '0 0 6px 0', fontSize: 18, fontWeight: 600, color: 'white' }}>{c.title}</h3>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: 16, color: 'rgba(255,255,255,0.5)', fontSize: 13 }}>
+                                    <div className="complaint-card-meta" style={{ display: 'flex', alignItems: 'center', gap: 16, color: 'rgba(255,255,255,0.5)', fontSize: 13 }}>
                                         <span style={{ color: '#6366f1', fontWeight: 500 }}>{c.category.replace('_', ' ')}</span>
                                         <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><MapPin size={12} /> {c.zone.replace('_', ' ')}</span>
                                         <span>{new Date(c.created_at).toLocaleDateString()}</span>

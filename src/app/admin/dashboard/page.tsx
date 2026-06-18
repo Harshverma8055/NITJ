@@ -44,7 +44,7 @@ export default function AdminDashboard() {
             </div>
 
             {/* Stats Row */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 20, marginBottom: 32 }}>
+            <div className="stats-grid">
                 {statsConfig.map((s, i) => (
                     <div key={i} style={{ 
                         background: '#13151A', border: `1px solid ${s.border}`, borderRadius: 20, padding: 24,
@@ -63,7 +63,7 @@ export default function AdminDashboard() {
             </div>
 
             {/* Quick Actions */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16, marginBottom: 24 }}>
+            <div className="three-col-grid" style={{ marginBottom: 24 }}>
                 <button 
                     onClick={() => router.push('/admin/students')}
                     style={{ background: '#8b5cf6', color: 'white', border: 'none', padding: '16px', borderRadius: 12, fontWeight: 600, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, cursor: 'pointer' }}
@@ -79,7 +79,7 @@ export default function AdminDashboard() {
             </div>
 
             {/* Bottom Two Columns */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24 }}>
+            <div className="two-col-grid">
                 
                 {/* Department Breakdown */}
                 <div style={{ background: '#13151A', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 16, padding: 24 }}>

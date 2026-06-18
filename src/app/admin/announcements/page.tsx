@@ -58,7 +58,7 @@ export default function AnnouncementsPage() {
     return (
         <div style={{ maxWidth: 1200, margin: '0 auto', color: 'white', paddingBottom: 60 }}>
             {/* Header */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 40 }}>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 16, justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 40 }}>
                 <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
                     <Megaphone size={32} />
                     <div>
@@ -72,7 +72,7 @@ export default function AnnouncementsPage() {
                     onClick={() => setShowModal(true)}
                     style={{ 
                         background: '#8b5cf6', color: 'white', border: 'none', 
-                        padding: '12px 0', width: 400, borderRadius: 8, fontSize: 14, fontWeight: 600,
+                        padding: '12px 24px', flex: '1 1 200px', maxWidth: 400, borderRadius: 8, fontSize: 14, fontWeight: 600,
                         display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, cursor: 'pointer'
                     }}
                 >
@@ -131,8 +131,8 @@ export default function AnnouncementsPage() {
 
             {/* Create Modal */}
             {showModal && (
-                <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
-                    <div style={{ background: '#13151A', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 16, width: '100%', maxWidth: 500, padding: 32 }}>
+                <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 16 }}>
+                    <div style={{ background: '#13151A', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 16, width: '100%', maxWidth: 500, padding: 32, maxHeight: '90vh', overflowY: 'auto' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 24 }}>
                             <h2 style={{ margin: 0, fontSize: 20 }}>New Announcement</h2>
                             <button onClick={() => setShowModal(false)} style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer' }}><X /></button>

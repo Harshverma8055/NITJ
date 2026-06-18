@@ -67,20 +67,14 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     }
 
     return (
-        <div style={{ display: 'flex', height: '100vh', background: '#090a0f', color: 'white' }}>
+        <div className="dashboard-layout" style={{ background: '#090a0f', color: 'white' }}>
             {/* Sidebar */}
-            <div style={{
-                width: 260,
+            <div className="sidebar" style={{
                 background: '#13151A',
-                borderRight: '1px solid rgba(255,255,255,0.05)',
-                display: 'flex',
-                flexDirection: 'column',
-                padding: '24px 0',
-                height: '100vh',
-                overflowY: 'auto'
+                borderRight: '1px solid rgba(255,255,255,0.05)'
             }}>
                 {/* Logo */}
-                <div style={{ padding: '0 24px', display: 'flex', alignItems: 'center', gap: 12, marginBottom: 32 }}>
+                <div className="sidebar-logo" style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                     <div style={{ background: '#f59e0b', padding: 8, borderRadius: 8, display: 'flex' }}>
                         <Shield size={20} color="black" />
                     </div>
@@ -91,16 +85,16 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 </div>
 
                 {/* Nav Links */}
-                <nav style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 4 }}>
+                <nav className="sidebar-nav">
                     {navItems.map(item => {
                         const active = pathname === item.path || pathname.startsWith(item.path + '/');
                         return (
                             <button
                                 key={item.name}
+                                className="nav-link"
                                 onClick={() => router.push(item.path)}
                                 style={{
                                     display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                                    padding: '12px 24px', width: '100%',
                                     background: active ? 'rgba(245, 158, 11, 0.1)' : 'transparent',
                                     color: active ? '#f59e0b' : 'rgba(255,255,255,0.6)',
                                     border: 'none', borderLeftWidth: 3, borderLeftStyle: 'solid',
@@ -122,7 +116,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                                 }}
                             >
                                 <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                                    <item.icon size={18} /> {item.name}
+                                    <item.icon size={18} /> <span className="nav-text">{item.name}</span>
                                 </div>
                             </button>
                         );
@@ -130,7 +124,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 </nav>
 
                 {/* User Profile & Sign Out */}
-                <div style={{ padding: '0 16px', marginTop: 24 }}>
+                <div className="sidebar-footer">
                     <div style={{
                         padding: 12, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)',
                         borderRadius: 12, display: 'flex', alignItems: 'center', gap: 12,
@@ -175,7 +169,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             </div>
 
             {/* Main Content Area */}
-            <div style={{ flex: 1, overflowY: 'auto', padding: '32px 40px', background: '#090a0f', position: 'relative' }}>
+            <div className="main-content" style={{ background: '#090a0f', position: 'relative' }}>
                 {children}
 
                 {/* Real-time Toast Popup */}

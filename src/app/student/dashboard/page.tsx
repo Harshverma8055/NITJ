@@ -88,7 +88,7 @@ export default function StudentDashboard() {
             </div>
 
             {/* Stats Grid */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 24, marginBottom: 40 }}>
+            <div className="stats-grid">
                 {/* Total Pulse */}
                 <div style={{ background: '#0D0E12', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 16, padding: 24, display: 'flex', alignItems: 'center', gap: 20 }}>
                     <div style={{ width: 48, height: 48, borderRadius: '50%', background: 'rgba(99,102,241,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -127,7 +127,7 @@ export default function StudentDashboard() {
             </div>
 
             {/* Main Content Grid */}
-            <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 24, marginBottom: 40 }}>
+            <div className="main-content-grid">
                 {/* Left Column: Recent Issues & Announcements */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
                     {/* Announcements Section */}

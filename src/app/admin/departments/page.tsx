@@ -89,7 +89,7 @@ export default function DepartmentsPage() {
             </div>
 
             {/* Top Stats */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 20, marginBottom: 40 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 20, marginBottom: 40 }}>
                 <StatCard icon={<Building2 size={20} color="#8b5cf6" />} title="Total Departments" value={totalDepts} color="#8b5cf6" />
                 <StatCard icon={<BarChart3 size={20} color="#f59e0b" />} title="All Time Complaints" value={allComplaints} color="#f59e0b" />
                 <StatCard icon={<ShieldCheck size={20} color="#10b981" />} title="Resolved" value={resolvedComplaints} color="#10b981" />
@@ -99,7 +99,7 @@ export default function DepartmentsPage() {
 
             {/* Department Content */}
             {view === 'grid' ? (
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 24 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 24 }}>
                     {departments.map(dept => {
                         const resolutionRate = dept.total > 0 ? Math.round((dept.resolved / dept.total) * 100) : 0;
                         return (
@@ -167,8 +167,8 @@ export default function DepartmentsPage() {
                     })}
                 </div>
             ) : (
-                <div style={{ background: '#13151A', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 12, overflow: 'hidden' }}>
-                    <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: 14 }}>
+                <div style={{ background: '#13151A', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 12, overflowX: 'auto' }}>
+                    <table className="data-table" style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: 14 }}>
                         <thead>
                             <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.5)', fontSize: 12 }}>
                                 <th style={{ padding: '16px 24px', fontWeight: 600 }}>DEPARTMENT</th>
@@ -185,17 +185,17 @@ export default function DepartmentsPage() {
                                 const resolutionRate = dept.total > 0 ? Math.round((dept.resolved / dept.total) * 100) : 0;
                                 return (
                                     <tr key={dept.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                                        <td style={{ padding: '16px 24px', display: 'flex', alignItems: 'center', gap: 12 }}>
+                                        <td data-label="DEPARTMENT" style={{ padding: '16px 24px', display: 'flex', alignItems: 'center', gap: 12 }}>
                                             <div style={{ width: 32, height: 32, borderRadius: 8, background: `rgba(${hexToRgb(dept.color)}, 0.1)`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                                                 <dept.icon size={16} color={dept.color} />
                                             </div>
                                             <span style={{ fontWeight: 600 }}>{dept.name}</span>
                                         </td>
-                                        <td style={{ padding: '16px 24px', color: 'rgba(255,255,255,0.6)' }}>{dept.head}</td>
-                                        <td style={{ padding: '16px 24px', fontWeight: 600 }}>{dept.total}</td>
-                                        <td style={{ padding: '16px 24px', color: dept.active > 0 ? '#f59e0b' : 'white', fontWeight: 600 }}>{dept.active}</td>
-                                        <td style={{ padding: '16px 24px', color: dept.resolved > 0 ? '#10b981' : 'white', fontWeight: 600 }}>{dept.resolved}</td>
-                                        <td style={{ padding: '16px 24px' }}>
+                                        <td data-label="HEAD" style={{ padding: '16px 24px', color: 'rgba(255,255,255,0.6)' }}>{dept.head}</td>
+                                        <td data-label="TOTAL" style={{ padding: '16px 24px', fontWeight: 600 }}>{dept.total}</td>
+                                        <td data-label="ACTIVE" style={{ padding: '16px 24px', color: dept.active > 0 ? '#f59e0b' : 'white', fontWeight: 600 }}>{dept.active}</td>
+                                        <td data-label="RESOLVED" style={{ padding: '16px 24px', color: dept.resolved > 0 ? '#10b981' : 'white', fontWeight: 600 }}>{dept.resolved}</td>
+                                        <td data-label="RESOLUTION RATE" style={{ padding: '16px 24px' }}>
                                             <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                                                 <div style={{ width: 60, height: 4, background: 'rgba(255,255,255,0.1)', borderRadius: 2 }}>
                                                     <div style={{ height: '100%', width: `${resolutionRate}%`, background: dept.color, borderRadius: 2 }}></div>
@@ -203,7 +203,7 @@ export default function DepartmentsPage() {
                                                 <span style={{ fontSize: 12, color: dept.color, fontWeight: 600 }}>{resolutionRate}%</span>
                                             </div>
                                         </td>
-                                        <td style={{ padding: '16px 24px' }}>
+                                        <td data-label="ACTION" style={{ padding: '16px 24px' }}>
                                             <button onClick={() => router.push('/admin/complaints')} style={{ background: 'none', border: 'none', color: '#6366f1', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
                                                 View Details
                                             </button>
