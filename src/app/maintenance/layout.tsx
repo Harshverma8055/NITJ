@@ -2,9 +2,9 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
-import { LayoutDashboard, AlertTriangle, Users, User, Info, LogOut, Shield } from 'lucide-react';
+import { LayoutDashboard, CheckSquare, Info, LogOut, Wrench, ClipboardList } from 'lucide-react';
 
-export default function StudentLayout({ children }: { children: React.ReactNode }) {
+export default function MaintenanceLayout({ children }: { children: React.ReactNode }) {
     const router = useRouter();
     const pathname = usePathname();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -21,10 +21,8 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
     }, [router]);
 
     const navItems = [
-        { name: 'Dashboard', path: '/student/dashboard', icon: LayoutDashboard },
-        { name: 'Campus Issues', path: '/student/complaints', icon: AlertTriangle },
-        { name: 'Student Directory', path: '/student/directory', icon: Users },
-        { name: 'My Profile', path: '/student/profile', icon: User },
+        { name: 'My Queue', path: '/maintenance/dashboard', icon: ClipboardList },
+        { name: 'Resolved History', path: '/maintenance/history', icon: CheckSquare },
         { name: 'About Project', path: '/about', icon: Info },
     ];
 
@@ -49,12 +47,12 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
             }}>
                 {/* Logo */}
                 <div style={{ padding: '0 24px', display: 'flex', alignItems: 'center', gap: 12, marginBottom: 40 }}>
-                    <div style={{ background: '#10b981', padding: 8, borderRadius: 8, display: 'flex' }}>
-                        <Shield size={20} color="white" />
+                    <div style={{ background: '#06b6d4', padding: 8, borderRadius: 8, display: 'flex' }}>
+                        <Wrench size={20} color="white" />
                     </div>
                     <div>
                         <h2 style={{ margin: 0, fontSize: 16, color: 'white', fontWeight: 700 }}>NITJ Final Project</h2>
-                        <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)', letterSpacing: 1 }}>STUDENT PANEL</span>
+                        <span style={{ fontSize: 10, color: '#06b6d4', letterSpacing: 1, fontWeight: 600 }}>MAINTENANCE PANEL</span>
                     </div>
                 </div>
 
@@ -69,10 +67,10 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
                                 style={{
                                     display: 'flex', alignItems: 'center', gap: 12,
                                     padding: '12px 24px', width: '100%',
-                                    background: active ? 'rgba(16, 185, 129, 0.1)' : 'transparent',
-                                    color: active ? '#10b981' : 'rgba(255,255,255,0.6)',
+                                    background: active ? 'rgba(6, 182, 212, 0.1)' : 'transparent',
+                                    color: active ? '#06b6d4' : 'rgba(255,255,255,0.6)',
                                     border: 'none', borderLeftWidth: 3, borderLeftStyle: 'solid',
-                                    borderLeftColor: active ? '#10b981' : 'transparent',
+                                    borderLeftColor: active ? '#06b6d4' : 'transparent',
                                     cursor: 'pointer', textAlign: 'left',
                                     transition: 'all 0.2s', fontSize: 14, fontWeight: 500
                                 }}
@@ -92,7 +90,7 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
                     }}>
                         <div style={{
                             width: 36, height: 36, borderRadius: '50%',
-                            background: '#10b981', color: 'white',
+                            background: '#06b6d4', color: 'white',
                             display: 'flex', alignItems: 'center', justifyContent: 'center',
                             fontWeight: 'bold', fontSize: 14
                         }}>
@@ -103,7 +101,7 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
                                 {user.name}
                             </div>
                             <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)' }}>
-                                {user.student?.roll_number || 'Student'}
+                                {user.role || 'Staff'}
                             </div>
                         </div>
                     </div>

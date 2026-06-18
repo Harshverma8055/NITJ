@@ -5,8 +5,8 @@ import PWARegister from "@/components/PWARegister";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "CampusNiti - Campus Discipline & Student Rating Platform",
-  description: "A centralized ecosystem for transparent campus management. Empowering student voices through live polls, feedback, and structured disciplinary reporting.",
+  title: "NITJ Final Project - Campus Management System",
+  description: "A centralized ecosystem for transparent campus management.",
 };
 
 export default function RootLayout({

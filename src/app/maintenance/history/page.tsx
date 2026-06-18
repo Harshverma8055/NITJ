@@ -5,7 +5,7 @@ import { AlertTriangle, Wrench, CheckCircle, Clock, UserPlus, Zap, Image as Imag
 import { getSLATimeLeft, PRIORITY_LABELS, STATUS_LABELS, ZONE_LABELS, getPriorityColor, getStatusColor, getCategoryIcon } from '@/lib/complaints';
 import type { ComplaintListItem } from '@/lib/complaints';
 
-export default function MaintenanceDashboard() {
+export default function MaintenanceHistory() {
     const [complaints, setComplaints] = useState<ComplaintListItem[]>([]);
     const [loading, setLoading]       = useState(true);
     const [updating, setUpdating]     = useState<string | null>(null);
@@ -133,13 +133,9 @@ export default function MaintenanceDashboard() {
         <div>
             <div className="page-header" style={{ marginBottom: '24px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                    <h1>{userDept ? `${userDept.replace(/_/g, ' ')} Panel` : 'Maintenance Dashboard'}</h1>
-                    <span style={{ background: 'rgba(6, 182, 212, 0.15)', color: '#06b6d4', padding: '4px 12px', borderRadius: '20px', fontSize: '0.85rem', fontWeight: 600 }}>
-                        <Wrench size={14} style={{ display: 'inline-block', marginRight: '6px', verticalAlign: '-2px' }} />
-                        Staff Console
-                    </span>
+                    <h1>Resolved History</h1>
                 </div>
-                <p>Manage your real-world maintenance workflow. Pick up available jobs and track your progress.</p>
+                <p>View all past maintenance jobs that have been completed by your department.</p>
             </div>
 
             {role === 'ADMIN' && (
@@ -153,119 +149,18 @@ export default function MaintenanceDashboard() {
                 </div>
             )}
 
-            {/* KPI row */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '20px', marginBottom: '36px' }}>
-                <div style={{ background: 'var(--bg-glass)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '12px', padding: '24px', position: 'relative', overflow: 'hidden' }}>
-                    <div style={{ position: 'absolute', right: '-10%', bottom: '-10%', width: '150px', height: '150px', background: 'radial-gradient(circle, rgba(245, 158, 11, 0.1) 0%, transparent 70%)', borderRadius: '50%', pointerEvents: 'none' }}></div>
-                    <div style={{ marginBottom: '16px' }}><div style={{ background: 'rgba(255, 255, 255, 0.05)', display: 'inline-flex', padding: '8px', borderRadius: '8px' }}><Clock size={20} color="var(--text-secondary)" /></div></div>
-                    <div style={{ fontSize: '36px', fontWeight: '800', lineHeight: 1 }}>{myTasks.length + availableJobs.length}</div>
-                    <div style={{ color: 'var(--text-muted)', fontSize: '13px', marginTop: '12px', fontWeight: 600 }}>Pending Tasks</div>
-                </div>
-                <div style={{ background: 'var(--bg-glass)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '12px', padding: '24px', position: 'relative', overflow: 'hidden' }}>
-                    <div style={{ position: 'absolute', right: '-10%', bottom: '-10%', width: '150px', height: '150px', background: 'radial-gradient(circle, rgba(59, 130, 246, 0.1) 0%, transparent 70%)', borderRadius: '50%', pointerEvents: 'none' }}></div>
-                    <div style={{ marginBottom: '16px' }}><div style={{ background: 'rgba(59, 130, 246, 0.1)', display: 'inline-flex', padding: '8px', borderRadius: '8px' }}><Wrench size={20} color="#3b82f6" /></div></div>
-                    <div style={{ fontSize: '36px', fontWeight: '800', lineHeight: 1 }}>{inProgress.length}</div>
-                    <div style={{ color: 'var(--text-muted)', fontSize: '13px', marginTop: '12px', fontWeight: 600 }}>In Progress</div>
-                </div>
-                <div style={{ background: 'var(--bg-glass)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '12px', padding: '24px', position: 'relative', overflow: 'hidden' }}>
-                    <div style={{ position: 'absolute', right: '-10%', bottom: '-10%', width: '150px', height: '150px', background: 'radial-gradient(circle, rgba(16, 185, 129, 0.1) 0%, transparent 70%)', borderRadius: '50%', pointerEvents: 'none' }}></div>
-                    <div style={{ marginBottom: '16px' }}><CheckCircle size={20} color="var(--text-secondary)" /></div>
-                    <div style={{ fontSize: '36px', fontWeight: '800', lineHeight: 1 }}>{resolved.length}</div>
-                    <div style={{ color: 'var(--text-muted)', fontSize: '13px', marginTop: '12px', fontWeight: 600 }}>Resolved</div>
-                </div>
-            </div>
-
-            {/* Pending Tasks (Combines available and assigned) */}
             <Section 
-                title="Pending Tasks" 
-                subtitle="Compulsory tasks assigned by administration. Click start when you begin working on them."
-                items={[...myTasks, ...availableJobs]} 
-                icon={<Zap size={18} />} 
-                color="#f59e0b" 
+                title="Resolved Work" 
+                subtitle="Issues that have been fully addressed and closed."
+                items={resolved} 
+                icon={<CheckCircle size={18} />} 
+                color="#10b981" 
                 renderAction={(c) => (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                        {c.status === 'APPROVED' && !c.assigned_staff_id ? (
-                            <button
-                                disabled={updating === c.id}
-                                onClick={() => updateStatus(c.id, 'ASSIGNED', false)}
-                                style={{ padding: '10px 20px', background: '#3b82f6', border: 'none', borderRadius: '8px', cursor: 'pointer', color: 'white', fontWeight: 600, fontSize: 13, display: 'flex', alignItems: 'center', gap: 6, width: '100%', justifyContent: 'center', boxShadow: '0 4px 12px rgba(59, 130, 246, 0.3)' }}>
-                                <UserPlus size={16} />
-                                {updating === c.id ? 'Accepting...' : 'Accept Job'}
-                            </button>
-                        ) : (
-                            <button
-                                disabled={updating === c.id}
-                                onClick={() => updateStatus(c.id, 'IN_PROGRESS', false)}
-                                style={{ padding: '10px 20px', background: '#3b82f6', border: 'none', borderRadius: '8px', cursor: 'pointer', color: 'white', fontWeight: 600, fontSize: 13, display: 'flex', alignItems: 'center', gap: 6, width: '100%', justifyContent: 'center', boxShadow: '0 4px 12px rgba(59, 130, 246, 0.3)' }}>
-                                <Wrench size={16} />
-                                {updating === c.id ? 'Starting...' : 'Start Work'}
-                            </button>
-                        )}
-                    </div>
-                )}
-            />
-
-            {/* In Progress */}
-            <Section 
-                title="Currently Working On" 
-                subtitle="Issues you are actively fixing. Upload a photo of the completed work to resolve."
-                items={inProgress} 
-                icon={<Wrench size={18} />} 
-                color="#06b6d4" 
-                renderAction={(c) => (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', background: 'rgba(6, 182, 212, 0.05)', padding: '16px', borderRadius: '8px', border: '1px solid rgba(6, 182, 212, 0.2)' }}>
-                        <div>
-                            <label style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 8, display: 'block' }}>Resolution Notes</label>
-                            <textarea
-                                style={{ ...inputStyle, minHeight: 80, resize: 'vertical' }}
-                                placeholder="Describe exactly what was fixed..."
-                                value={noteMap[c.id] ?? ''}
-                                onChange={e => setNoteMap(prev => ({ ...prev, [c.id]: e.target.value }))}
-                            />
-                        </div>
-                        
-                        <div>
-                            <label style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 8, display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                <ImageIcon size={14} /> Work Evidence (Required)
-                            </label>
-                            <label style={{
-                                display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-                                border: fileMap[c.id] ? '2px solid #10b981' : '2px dashed var(--border-color)',
-                                background: fileMap[c.id] ? 'rgba(16, 185, 129, 0.05)' : 'var(--bg-glass)',
-                                padding: '24px 16px', borderRadius: '8px', cursor: 'pointer', transition: 'all 0.2s'
-                            }}>
-                                <input
-                                    type="file"
-                                    accept="image/*"
-                                    onChange={e => {
-                                        const file = e.target.files?.[0];
-                                        if (file) setFileMap(prev => ({ ...prev, [c.id]: file }));
-                                    }}
-                                    style={{ display: 'none' }}
-                                />
-                                {fileMap[c.id] ? (
-                                    <>
-                                        <CheckCircle size={24} color="#10b981" style={{ marginBottom: '8px' }} />
-                                        <span style={{ color: '#10b981', fontWeight: 600, fontSize: '13px' }}>{fileMap[c.id].name}</span>
-                                    </>
-                                ) : (
-                                    <>
-                                        <ImageIcon size={24} color="var(--text-muted)" style={{ marginBottom: '8px' }} />
-                                        <span style={{ color: 'var(--text-primary)', fontWeight: 500, fontSize: '13px' }}>Tap to take a photo or upload</span>
-                                        <span style={{ color: 'var(--text-muted)', fontSize: '11px', marginTop: '4px' }}>PNG, JPG up to 10MB</span>
-                                    </>
-                                )}
-                            </label>
-                        </div>
-                        
-                        <button
-                            disabled={updating === c.id}
-                            onClick={() => updateStatus(c.id, 'RESOLVED')}
-                            style={{ padding: '12px 20px', background: '#10b981', border: 'none', borderRadius: '8px', cursor: 'pointer', color: 'white', fontWeight: 700, fontSize: 14, display: 'flex', alignItems: 'center', gap: 8, width: '100%', justifyContent: 'center', boxShadow: '0 4px 12px rgba(16, 185, 129, 0.3)', marginTop: '8px' }}>
-                            <CheckCircle size={18} />
-                            {updating === c.id ? 'Saving...' : 'Mark as Resolved'}
-                        </button>
-                    </div>
+                    <button
+                        onClick={() => window.location.href = `/maintenance/complaints/${c.id}`}
+                        style={{ padding: '10px 20px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', cursor: 'pointer', color: 'var(--text-primary)', fontWeight: 600, fontSize: 13, display: 'flex', alignItems: 'center', gap: 6, width: '100%', justifyContent: 'center' }}>
+                        View Details
+                    </button>
                 )}
             />
         </div>

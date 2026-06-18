@@ -130,6 +130,30 @@ export default function AdminComplaintDetail({ params }: { params: { id: string 
                     <MetricBox title="EMERGENCY" value={c.is_emergency ? 'Yes' : 'No'} />
                 </div>
 
+                {/* Exact Issue Location (Map) */}
+                {(c.gps_lat && c.gps_lng) && (
+                    <div style={{ marginBottom: 32 }}>
+                        <h3 style={{ fontSize: 16, fontWeight: 600, color: 'white', display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
+                            <MapPin size={18} color="#f59e0b" /> Exact Issue Location
+                        </h3>
+                        <div style={{ height: 250, borderRadius: 12, overflow: 'hidden', border: '1px solid rgba(255,255,255,0.1)' }}>
+                            <iframe 
+                                width="100%" 
+                                height="100%" 
+                                frameBorder="0" 
+                                scrolling="no" 
+                                marginHeight={0} 
+                                marginWidth={0} 
+                                src={`https://www.openstreetmap.org/export/embed.html?bbox=${c.gps_lng - 0.005},${c.gps_lat - 0.005},${c.gps_lng + 0.005},${c.gps_lat + 0.005}&layer=mapnik&marker=${c.gps_lat},${c.gps_lng}`}
+                            ></iframe>
+                        </div>
+                        <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)', marginTop: 8 }}>
+                            Coordinates: {c.gps_lat.toFixed(6)}, {c.gps_lng.toFixed(6)}
+                            <a href={`https://www.google.com/maps?q=${c.gps_lat},${c.gps_lng}`} target="_blank" rel="noreferrer" style={{ marginLeft: 12, color: '#3b82f6', textDecoration: 'none' }}>Open in Google Maps</a>
+                        </div>
+                    </div>
+                )}
+
                 {/* Assigned To */}
                 <div style={{ 
                     background: 'rgba(139, 92, 246, 0.05)', border: '1px solid rgba(139, 92, 246, 0.2)', 

@@ -2,9 +2,9 @@ import { MetadataRoute } from 'next';
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: 'CampusNiti',
-    short_name: 'CampusNiti',
-    description: 'Campus Discipline & Student Rating Platform',
+    name: 'NITJ Final Project',
+    short_name: 'NITJ Project',
+    description: 'Campus Management System',
     start_url: '/',
     display: 'standalone',
     background_color: '#020617',

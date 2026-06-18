@@ -212,6 +212,25 @@ export default function StudentComplaintDetail({ params }: { params: Promise<{ i
                     )}
                 </div>
 
+                {data.gps_lat && data.gps_lng && (
+                    <div style={{ marginBottom: 20 }}>
+                        <h3 style={{ fontSize: 15, color: 'var(--text-primary)', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 6 }}>
+                            <MapPin size={16} color="#3b82f6" /> Exact Issue Location
+                        </h3>
+                        <div style={{ height: 200, borderRadius: 'var(--radius-md)', overflow: 'hidden', border: '1px solid var(--border-color)' }}>
+                            <iframe 
+                                width="100%" 
+                                height="100%" 
+                                frameBorder="0" 
+                                scrolling="no" 
+                                marginHeight={0} 
+                                marginWidth={0} 
+                                src={`https://www.openstreetmap.org/export/embed.html?bbox=${data.gps_lng - 0.005},${data.gps_lat - 0.005},${data.gps_lng + 0.005},${data.gps_lat + 0.005}&layer=mapnik&marker=${data.gps_lat},${data.gps_lng}`}
+                            ></iframe>
+                        </div>
+                    </div>
+                )}
+
                 {/* Description */}
                 <div style={{ background: 'var(--bg-glass)', padding: 16, borderRadius: 'var(--radius-md)', fontSize: 15, lineHeight: 1.7, color: 'var(--text-secondary)', marginBottom: 20 }}>
                     {data.description}

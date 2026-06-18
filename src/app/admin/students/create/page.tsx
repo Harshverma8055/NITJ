@@ -56,7 +56,7 @@ export default function CreateStudentPage() {
                     <UserPlus size={24} color="#8b5cf6" /> Create New Student
                 </h1>
                 <p style={{ color: 'rgba(255,255,255,0.5)', margin: '0 0 32px 0', fontSize: 14 }}>
-                    Manually add a student to the CampusNiti system.
+                    Manually add a student to the NITJ Final Project system.
                 </p>
 
                 <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>

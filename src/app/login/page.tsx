@@ -31,7 +31,7 @@ export default function LoginPage() {
             if (!res.ok) { setError(data.error || 'Login failed'); setLoading(false); return; }
             if (data.user.role === 'ADMIN') window.location.href = '/admin/dashboard';
             else if (data.user.role === 'STUDENT') window.location.href = '/student/dashboard';
-            else if (data.user.role === 'MAINTENANCE') window.location.href = '/staff/dashboard';
+            else if (data.user.role === 'MAINTENANCE') window.location.href = '/maintenance/dashboard';
             else window.location.href = '/faculty/dashboard';
         } catch {
             setError('Network error. Please try again.');
@@ -66,7 +66,7 @@ export default function LoginPage() {
                     <div className="logo-icon">
                         {isResetMode ? <KeyRound size={28} color="white" /> : <Shield size={28} color="white" />}
                     </div>
-                    <h1>{isResetMode ? 'Reset Password' : 'CampusNiti'}</h1>
+                    <h1>{isResetMode ? 'Reset Password' : 'NITJ Final Project'}</h1>
                     {!isResetMode && (
                         <p style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
                             <Sparkles size={14} /> Student Discipline Rating System <Sparkles size={14} />

@@ -85,7 +85,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                         <Shield size={20} color="black" />
                     </div>
                     <div>
-                        <h2 style={{ margin: 0, fontSize: 16, color: 'white', fontWeight: 700 }}>CampusNiti</h2>
+                        <h2 style={{ margin: 0, fontSize: 16, color: 'white', fontWeight: 700 }}>NITJ Final Project</h2>
                         <span style={{ fontSize: 10, color: '#f59e0b', letterSpacing: 1, fontWeight: 600 }}>ADMIN PANEL</span>
                     </div>
                 </div>
