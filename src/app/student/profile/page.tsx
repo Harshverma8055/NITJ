@@ -59,7 +59,7 @@ export default function ProfilePage() {
                 <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 16, padding: 24, textAlign: 'center' }}>
                     <Activity size={24} color="#818cf8" style={{ margin: '0 auto 12px' }} />
                     <div style={{ fontSize: 32, fontWeight: 700, color: 'white', marginBottom: 4 }}>{student.rating || 0}</div>
-                    <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)', fontWeight: 600, letterSpacing: 1 }}>PULSE POINTS</div>
+                    <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)', fontWeight: 600, letterSpacing: 1 }}>PULSE</div>
                 </div>
                 <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 16, padding: 24, textAlign: 'center' }}>
                     <ShieldCheck size={24} color="#10b981" style={{ margin: '0 auto 12px' }} />

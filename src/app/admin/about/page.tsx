@@ -16,7 +16,7 @@ export default function AboutPage() {
                 </div>
                 <h1 style={{ fontSize: 42, fontWeight: 800, margin: '0 0 8px 0', letterSpacing: -0.5 }}>NITJ Final Project</h1>
                 <div style={{ color: 'rgba(255,255,255,0.6)', fontSize: 15, display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <Sparkles size={16} color="#6366f1" /> Student Discipline & Campus Infrastructure Management System <Sparkles size={16} color="#6366f1" />
+                    <Sparkles size={16} color="#6366f1" /> Campus Infrastructure Management System <Sparkles size={16} color="#6366f1" />
                 </div>
             </div>
 

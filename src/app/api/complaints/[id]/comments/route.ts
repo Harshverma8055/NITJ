@@ -19,7 +19,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
         const { data, error } = await supabase.from('complaint_comments').insert({
             complaint_id: id,
-            author_id: session.userId,
+            author_user_id: session.userId,
             content: body.content.trim(),
             is_official: isOfficial,
         }).select().single();

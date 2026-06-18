@@ -58,7 +58,7 @@ export default function ComplaintsPage() {
 
             {/* Status Filters */}
             <div style={{ display: 'flex', gap: 12, marginBottom: 24, overflowX: 'auto', paddingBottom: 8 }}>
-                {['ALL', 'PENDING_REVIEW', 'APPROVED', 'ASSIGNED', 'IN_PROGRESS', 'RESOLVED'].map(status => (
+                {['ALL', 'PENDING_REVIEW', 'IN_PROGRESS', 'RESOLVED'].map(status => (
                     <button 
                         key={status}
                         onClick={() => setStatusFilter(status)}

@@ -38,6 +38,25 @@ export default function AdminStudentsPage() {
         fetchStudents();
     }, []);
 
+    const getMappedDept = (dept: string) => {
+        if (!dept) return 'N/A';
+        const d = dept.toUpperCase();
+        if (d.includes('COMPUTER') || d.includes('CSE')) return 'CSE';
+        if ((d.includes('ELECTRONICS') && d.includes('COMMUNICATION')) || d.includes('ECE')) return 'ECE';
+        if (d.includes('ELECTRONICS') || d.includes('EE')) return 'EE';
+        if (d.includes('INFORMATION TECHNOLOGY') || d.includes('IT')) return 'IT';
+        if (d.includes('INSTRUMENTATION') || d.includes('ICE')) return 'ICE';
+        if (d.includes('INDUSTRIAL') || d.includes('PRODUCTION') || d.includes('IPE') || d.includes('IP')) return 'IPE';
+        if (d.includes('BIO') || d.includes('BT')) return 'BT';
+        if (d.includes('CHEM') || d.includes('CHE')) return 'ChE';
+        if (d.includes('CIVIL') || d.includes('CE')) return 'CE';
+        if (d.includes('DATA SCIENCE') || d.includes('DSE')) return 'DSE';
+        if (d.includes('MATH') || d.includes('COMPUTING') || d.includes('MNC')) return 'MnC';
+        if (d.includes('MECHANICAL') || d.includes('ME')) return 'ME';
+        if (d.includes('TEXTILE') || d.includes('TT')) return 'TT';
+        return dept;
+    };
+
     const departments = useMemo(() => {
         const set = new Set(students.map(s => s.dept));
         return ['All Departments', ...Array.from(set)];
@@ -50,9 +69,14 @@ export default function AdminStudentsPage() {
 
     const filteredStudents = useMemo(() => {
         return students.filter(s => {
-            const matchesSearch = s.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                                  s.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                                  s.roll.toLowerCase().includes(searchQuery.toLowerCase());
+            const mappedDept = getMappedDept(s.dept);
+            const searchLower = searchQuery.toLowerCase();
+            
+            const matchesSearch = s.name.toLowerCase().includes(searchLower) || 
+                                  s.email.toLowerCase().includes(searchLower) ||
+                                  s.roll.toLowerCase().includes(searchLower) ||
+                                  s.dept.toLowerCase().includes(searchLower) ||
+                                  mappedDept.toLowerCase().includes(searchLower);
             const matchesDept = deptFilter === 'All Departments' || s.dept === deptFilter;
             const matchesYear = yearFilter === 'All' || s.year === yearFilter;
             return matchesSearch && matchesDept && matchesYear;

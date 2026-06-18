@@ -2,7 +2,8 @@
 
 import { use, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, Plus, Zap, MapPin, Clock, User, CheckCircle, Image as ImageIcon, Eye, Mic } from 'lucide-react';
+import { ArrowLeft, Plus, Zap, MapPin, Clock, User, CheckCircle, Image as ImageIcon } from 'lucide-react';
+import ComplaintTimeline from '@/components/complaints/ComplaintTimeline';
 
 export default function AdminComplaintDetail({ params }: { params: Promise<{ id: string }> }) {
     const { id } = use(params);
@@ -144,32 +145,32 @@ export default function AdminComplaintDetail({ params }: { params: Promise<{ id:
                 )}
 
                 {/* Assigned To */}
-                <div style={{ 
-                    background: 'rgba(139, 92, 246, 0.05)', border: '1px solid rgba(139, 92, 246, 0.2)', 
-                    borderRadius: 8, padding: '16px 20px', marginBottom: 32 
-                }}>
-                    <div style={{ fontSize: 11, color: '#a78bfa', fontWeight: 700, letterSpacing: 1, marginBottom: 4 }}>ASSIGNED TO</div>
-                    <div style={{ fontSize: 16, fontWeight: 700, color: 'white' }}>
-                        {c.staff?.name || 'Rajesh Kumar Sharma'} — <span style={{ color: 'rgba(255,255,255,0.7)', fontWeight: 500 }}>{c.staff?.department || 'ELECTRICAL_MAINT'}</span>
+                {c.staff ? (
+                    <div style={{ 
+                        background: 'rgba(139, 92, 246, 0.05)', border: '1px solid rgba(139, 92, 246, 0.2)', 
+                        borderRadius: 8, padding: '16px 20px', marginBottom: 32 
+                    }}>
+                        <div style={{ fontSize: 11, color: '#a78bfa', fontWeight: 700, letterSpacing: 1, marginBottom: 4 }}>ASSIGNED TO</div>
+                        <div style={{ fontSize: 16, fontWeight: 700, color: 'white' }}>
+                            {c.staff.name} — <span style={{ color: 'rgba(255,255,255,0.7)', fontWeight: 500 }}>{c.staff.department}</span>
+                        </div>
                     </div>
-                </div>
+                ) : (
+                    <div style={{ 
+                        background: 'rgba(245, 158, 11, 0.05)', border: '1px solid rgba(245, 158, 11, 0.2)', 
+                        borderRadius: 8, padding: '16px 20px', marginBottom: 32 
+                    }}>
+                        <div style={{ fontSize: 11, color: '#f59e0b', fontWeight: 700, letterSpacing: 1, marginBottom: 4 }}>ASSIGNMENT STATUS</div>
+                        <div style={{ fontSize: 15, fontWeight: 500, color: 'rgba(255,255,255,0.7)' }}>
+                            Not assigned to any staff yet
+                        </div>
+                    </div>
+                )}
 
                 {/* Description */}
                 <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: 14, lineHeight: 1.6, marginBottom: 40, whiteSpace: 'pre-wrap', wordBreak: 'break-all' }}>
                     {c.description}
                 </div>
-
-                {/* Resolution Proof */}
-                {c.status === 'RESOLVED' && (
-                    <div style={{ marginBottom: 40 }}>
-                        <h3 style={{ fontSize: 16, fontWeight: 600, color: '#10b981', display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
-                            <CheckCircle size={18} /> Resolution Proof (After)
-                        </h3>
-                        <div style={{ width: 120, height: 120, background: 'white', borderRadius: 8, overflow: 'hidden', border: '2px solid #10b981' }}>
-                            <img src="https://images.unsplash.com/photo-1513694203232-719a280e022f" alt="Proof" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                        </div>
-                    </div>
-                )}
             </div>
 
             {/* Timeline */}
@@ -178,15 +179,11 @@ export default function AdminComplaintDetail({ params }: { params: Promise<{ id:
                     📋 Status Timeline
                 </h3>
                 
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 32, position: 'relative' }}>
-                    <div style={{ position: 'absolute', left: 16, top: 20, bottom: 20, width: 2, background: 'rgba(255,255,255,0.05)' }}></div>
-                    
-                    <TimelineItem icon={<Clock size={16} />} color="#f59e0b" title="System" date="11 Jun 2026, 10:15 am" desc="Issue submitted by student. Awaiting admin review." />
-                    <TimelineItem icon={<Eye size={16} />} color="#3b82f6" title={<><span style={{background: 'rgba(59,130,246,0.1)', color: '#60a5fa', padding: '2px 8px', borderRadius: 12, fontSize: 10, marginRight: 8, fontWeight: 700}}>Approved</span> Prof. Amit Singh <span style={{color:'rgba(255,255,255,0.3)', fontWeight:400}}>- ADMIN</span></>} date="11 Jun 2026, 10:15 am" desc="Complaint reviewed and approved by admin." />
-                    <TimelineItem icon={<User size={16} />} color="#a855f7" title={<><span style={{background: 'rgba(168,85,247,0.1)', color: '#c084fc', padding: '2px 8px', borderRadius: 12, fontSize: 10, marginRight: 8, fontWeight: 700}}>Assigned to Staff</span> Rajesh Kumar Sharma <span style={{color:'rgba(255,255,255,0.3)', fontWeight:400}}>- MAINTENANCE</span></>} date="11 Jun 2026, 10:16 am" desc="Job accepted" />
-                    <TimelineItem icon={<Mic size={16} />} color="#06b6d4" title={<><span style={{background: 'rgba(6,182,212,0.1)', color: '#22d3ee', padding: '2px 8px', borderRadius: 12, fontSize: 10, marginRight: 8, fontWeight: 700}}>Work In Progress</span> Rajesh Kumar Sharma <span style={{color:'rgba(255,255,255,0.3)', fontWeight:400}}>- MAINTENANCE</span></>} date="11 Jun 2026, 10:17 am" desc="Job accepted" />
-                    <TimelineItem icon={<CheckCircle size={16} />} color="#10b981" title={<><span style={{background: 'rgba(16,185,129,0.1)', color: '#34d399', padding: '2px 8px', borderRadius: 12, fontSize: 10, marginRight: 8, fontWeight: 700}}>Resolved</span> Rajesh Kumar Sharma <span style={{color:'rgba(255,255,255,0.3)', fontWeight:400}}>- MAINTENANCE</span></>} date="11 Jun 2026, 11:44 am" desc={<><div>kfdflight issue on ground</div><img src="https://images.unsplash.com/photo-1513694203232-719a280e022f" style={{width: 60, height: 60, borderRadius: 4, marginTop: 8}} /></>} />
-                </div>
+                <ComplaintTimeline 
+                    updates={c.complaint_updates || []} 
+                    currentStatus={c.status} 
+                    createdAt={c.created_at} 
+                />
             </div>
         </div>
     );
@@ -217,19 +214,4 @@ function MetricBox({ title, value }: { title: string, value: string | number }) 
     );
 }
 
-function TimelineItem({ icon, color, title, date, desc }: { icon: any, color: string, title: any, date: string, desc: any }) {
-    return (
-        <div style={{ display: 'flex', gap: 20, position: 'relative', zIndex: 1 }}>
-            <div style={{ width: 32, height: 32, borderRadius: '50%', background: '#13151A', border: `2px solid ${color}`, color: color, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                {icon}
-            </div>
-            <div style={{ flex: 1 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8, alignItems: 'center' }}>
-                    <div style={{ fontSize: 14, fontWeight: 600, color: 'white' }}>{title}</div>
-                    <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)' }}>{date}</div>
-                </div>
-                <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.6)', lineHeight: 1.5 }}>{desc}</div>
-            </div>
-        </div>
-    );
-}
+

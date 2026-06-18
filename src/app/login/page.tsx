@@ -69,7 +69,7 @@ export default function LoginPage() {
                     <h1>{isResetMode ? 'Reset Password' : 'NITJ Final Project'}</h1>
                     {!isResetMode && (
                         <p style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
-                            <Sparkles size={14} /> Student Discipline Rating System <Sparkles size={14} />
+                            <Sparkles size={14} /> Campus Infrastructure Management System <Sparkles size={14} />
                         </p>
                     )}
                 </div>

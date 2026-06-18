@@ -19,12 +19,8 @@ export default function StudentDirectoryPage() {
     const YEARS = ['All Years', 'Year 1', 'Year 2', 'Year 3', 'Year 4'];
 
     useEffect(() => {
-        Promise.all([
-            fetch('/api/students').then(r => r.json()),
-            fetch('/api/staff').then(r => r.json())
-        ]).then(([studentData, staffData]) => {
+        fetch('/api/students').then(r => r.json()).then((studentData) => {
             if (studentData.students) setStudents(studentData.students);
-            if (staffData.staff) setStaff(staffData.staff);
             setLoading(false);
         }).catch(() => setLoading(false));
     }, []);
@@ -37,17 +33,34 @@ export default function StudentDirectoryPage() {
         return name.substring(0, 2).toUpperCase();
     };
 
-    // Client-side filtering
-    const filteredData = (viewMode === 'students' ? students : staff).filter(s => {
-        const matchesSearch = s.user?.name?.toLowerCase().includes(search.toLowerCase()) || 
-                              s.roll_number?.toLowerCase().includes(search.toLowerCase()) ||
-                              s.department?.toLowerCase().includes(search.toLowerCase());
-                              
-        if (viewMode === 'staff') return matchesSearch;
+    const getMappedDept = (dept: string) => {
+        if (!dept) return 'N/A';
+        const d = dept.toUpperCase();
+        if (d.includes('COMPUTER') || d.includes('CSE')) return 'CSE';
+        if ((d.includes('ELECTRONICS') && d.includes('COMMUNICATION')) || d.includes('ECE')) return 'ECE';
+        if (d.includes('ELECTRONICS') || d.includes('EE')) return 'EE';
+        if (d.includes('INFORMATION TECHNOLOGY') || d.includes('IT')) return 'IT';
+        if (d.includes('INSTRUMENTATION') || d.includes('ICE')) return 'ICE';
+        if (d.includes('INDUSTRIAL') || d.includes('PRODUCTION') || d.includes('IPE') || d.includes('IP')) return 'IPE';
+        if (d.includes('BIO') || d.includes('BT')) return 'BT';
+        if (d.includes('CHEM') || d.includes('CHE')) return 'ChE';
+        if (d.includes('CIVIL') || d.includes('CE')) return 'CE';
+        if (d.includes('DATA SCIENCE') || d.includes('DSE')) return 'DSE';
+        if (d.includes('MATH') || d.includes('COMPUTING') || d.includes('MNC')) return 'MnC';
+        if (d.includes('MECHANICAL') || d.includes('ME')) return 'ME';
+        if (d.includes('TEXTILE') || d.includes('TT')) return 'TT';
+        return dept;
+    };
 
-        const mappedDept = s.department?.includes('BIO') ? 'BT' : 
-                           s.department?.includes('COMP') ? 'CSE' : 
-                           s.department?.includes('CIVIL') ? 'CE' : s.department;
+    // Client-side filtering
+    const filteredData = students.filter(s => {
+        const mappedDept = getMappedDept(s.department);
+        const searchLower = search.toLowerCase();
+        
+        const matchesSearch = s.user?.name?.toLowerCase().includes(searchLower) || 
+                              s.roll_number?.toLowerCase().includes(searchLower) ||
+                              s.department?.toLowerCase().includes(searchLower) ||
+                              mappedDept.toLowerCase().includes(searchLower);
         
         const matchesDept = deptFilter === 'All Depts' || mappedDept === deptFilter;
         const matchesYear = yearFilter === 'All Years' || `Year ${s.year}` === yearFilter;
@@ -56,7 +69,7 @@ export default function StudentDirectoryPage() {
 
     useEffect(() => {
         setVisibleCount(24);
-    }, [search, deptFilter, yearFilter, viewMode]);
+    }, [search, deptFilter, yearFilter]);
 
     return (
         <div style={{ maxWidth: 1200, margin: '0 auto', color: 'white' }}>
@@ -94,34 +107,7 @@ export default function StudentDirectoryPage() {
                 />
             </div>
 
-            {/* Toggle Mode */}
-            <div style={{ display: 'flex', gap: 12, marginBottom: 24, padding: 4, background: 'rgba(255,255,255,0.05)', borderRadius: 12, width: 'fit-content' }}>
-                <button 
-                    onClick={() => setViewMode('students')}
-                    style={{
-                        padding: '8px 24px', borderRadius: 8, border: 'none', fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s',
-                        background: viewMode === 'students' ? '#6366f1' : 'transparent',
-                        color: viewMode === 'students' ? 'white' : 'rgba(255,255,255,0.5)',
-                        boxShadow: viewMode === 'students' ? '0 4px 12px rgba(99,102,241,0.3)' : 'none'
-                    }}
-                >
-                    Students
-                </button>
-                <button 
-                    onClick={() => setViewMode('staff')}
-                    style={{
-                        padding: '8px 24px', borderRadius: 8, border: 'none', fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s',
-                        background: viewMode === 'staff' ? '#10b981' : 'transparent',
-                        color: viewMode === 'staff' ? 'white' : 'rgba(255,255,255,0.5)',
-                        boxShadow: viewMode === 'staff' ? '0 4px 12px rgba(16,185,129,0.3)' : 'none'
-                    }}
-                >
-                    Staff & Faculty
-                </button>
-            </div>
-
-            {/* Filters (Only for students) */}
-            {viewMode === 'students' && (
+            {/* Filters */}
                 <div style={{ display: 'flex', gap: 24, marginBottom: 32, alignItems: 'center' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 12, flex: 1 }}>
                         <MapPin size={18} color="rgba(255,255,255,0.4)" />
@@ -164,106 +150,88 @@ export default function StudentDirectoryPage() {
                         ))}
                     </div>
                 </div>
-            )}
+
 
             {/* Count */}
             <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.5)', marginBottom: 24 }}>
-                Showing 1-{Math.min(filteredData.length, visibleCount)} of <strong>{filteredData.length}</strong> {viewMode === 'students' ? 'students' : 'staff members'}
+                Showing 1-{Math.min(filteredData.length, visibleCount)} of <strong>{filteredData.length}</strong> students
             </div>
 
-            {/* Grid */}
+            {/* Table */}
             {loading ? (
                 <div style={{ textAlign: 'center', padding: '40px 0' }}><div className="spinner"></div></div>
             ) : (
-                <>
-                <div style={{ 
-                    display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 24 
-                }}>
-                    {filteredData.slice(0, visibleCount).map((s: any) => (
-                        <div key={s.id} onClick={() => alert(`Profile viewing for ${s.user?.name || 'user'} is coming soon.`)} style={{
-                            background: 'rgba(255,255,255,0.02)',
-                            border: '1px solid rgba(255,255,255,0.05)',
-                            borderRadius: 16,
-                            padding: 24,
-                            display: 'flex',
-                            flexDirection: 'column',
-                            alignItems: 'center',
-                            transition: 'transform 0.2s, background 0.2s',
-                            cursor: 'pointer'
-                        }}
-                        onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.04)'}
-                        onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.02)'}
-                        >
-                            {/* Avatar */}
-                            <div style={{
-                                width: 64, height: 64, borderRadius: '50%',
-                                background: viewMode === 'students' ? '#6366f1' : '#10b981', color: 'white',
-                                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                fontSize: 24, fontWeight: 600, marginBottom: 16
-                            }}>
-                                {getInitials(s.user?.name)}
-                            </div>
-
-                            {/* Name & Details */}
-                            <h3 style={{ margin: '0 0 8px 0', fontSize: 16, color: viewMode === 'students' ? '#60a5fa' : '#34d399', fontWeight: 600, textAlign: 'center' }}>
-                                {s.user?.name || 'User Name'}
-                            </h3>
-                            
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'rgba(255,255,255,0.5)', fontSize: 12, marginBottom: 8 }}>
-                                <User size={12} /> {viewMode === 'students' ? s.roll_number : s.role}
-                            </div>
-                            
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 12, color: 'rgba(255,255,255,0.5)', fontSize: 12, marginBottom: 24 }}>
-                                <span style={{ color: viewMode === 'students' ? '#60a5fa' : '#34d399', fontWeight: 600 }}>
-                                    {s.department?.includes('BIO') ? 'BT' : s.department?.includes('COMP') ? 'CSE' : s.department}
-                                </span>
-                                {viewMode === 'students' && (
-                                    <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                                        <GraduationCap size={12} /> Year {s.year || 1}
-                                    </span>
-                                )}
-                            </div>
-
-                            {/* Stats */}
-                            <div style={{ display: 'flex', width: '100%', justifyContent: 'space-around', borderTop: '1px solid rgba(255,255,255,0.05)', borderBottom: '1px solid rgba(255,255,255,0.05)', padding: '16px 0', marginBottom: 16 }}>
-                                <div style={{ textAlign: 'center' }}>
-                                    <div style={{ color: '#10b981', fontSize: 18, fontWeight: 700 }}>{viewMode === 'students' ? s.rating || 0 : 'N/A'}</div>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: 4, color: 'rgba(255,255,255,0.4)', fontSize: 11 }}>
-                                        <Star size={10} /> Rating
-                                    </div>
-                                </div>
-                                <div style={{ width: 1, background: 'rgba(255,255,255,0.05)' }}></div>
-                                <div style={{ textAlign: 'center' }}>
-                                    <div style={{ color: 'rgba(255,255,255,0.8)', fontSize: 18, fontWeight: 700 }}>0</div>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: 4, color: 'rgba(255,255,255,0.4)', fontSize: 11 }}>
-                                        <Award size={10} /> Awards
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Footer */}
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: viewMode === 'students' ? '#60a5fa' : '#34d399', fontSize: 13, fontWeight: 500 }}>
-                                View Profile <ChevronRight size={14} />
-                            </div>
-                        </div>
-                    ))}
-                </div>
-                {visibleCount < filteredData.length && (
-                    <div style={{ textAlign: 'center', marginTop: 32 }}>
-                        <button 
-                            onClick={() => setVisibleCount(v => v + 24)}
-                            style={{
-                                background: 'transparent', border: '1px solid rgba(255,255,255,0.2)', color: 'white',
-                                padding: '12px 24px', borderRadius: 8, fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s'
-                            }}
-                            onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
-                            onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
-                        >
-                            Load More
-                        </button>
+                <div style={{ background: '#13151A', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 16, overflow: 'hidden' }}>
+                    <div style={{ width: '100%', overflowX: 'auto' }}>
+                        <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', minWidth: 900 }}>
+                            <thead>
+                                <tr style={{ color: 'rgba(255,255,255,0.4)', fontSize: 11, letterSpacing: 1, borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                                    <th style={{ padding: '16px 24px', fontWeight: 600 }}>NAME</th>
+                                    <th style={{ padding: '16px 24px', fontWeight: 600 }}>ROLL NO.</th>
+                                    <th style={{ padding: '16px 24px', fontWeight: 600 }}>DEPARTMENT</th>
+                                    <th style={{ padding: '16px 24px', fontWeight: 600 }}>YEAR</th>
+                                    <th style={{ padding: '16px 24px', fontWeight: 600 }}>PULSE</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {filteredData.length === 0 ? (
+                                    <tr>
+                                        <td colSpan={5} style={{ textAlign: 'center', padding: '40px', color: 'rgba(255,255,255,0.4)' }}>No students found.</td>
+                                    </tr>
+                                ) : filteredData.slice(0, visibleCount).map((s: any, i: number) => (
+                                    <tr key={s.id} style={{ borderBottom: i < visibleCount - 1 ? '1px solid rgba(255,255,255,0.05)' : 'none', fontSize: 13, transition: 'background 0.2s' }}
+                                        onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.02)'}
+                                        onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                                    >
+                                        <td style={{ padding: '16px 24px', display: 'flex', alignItems: 'center', gap: 12 }}>
+                                            <div style={{
+                                                width: 32, height: 32, borderRadius: '50%',
+                                                background: 'rgba(99, 102, 241, 0.1)',
+                                                color: '#60a5fa',
+                                                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                                fontSize: 12, fontWeight: 700
+                                            }}>
+                                                {getInitials(s.user?.name)}
+                                            </div>
+                                            <span style={{ fontWeight: 600 }}>{s.user?.name || 'User Name'}</span>
+                                        </td>
+                                        <td style={{ padding: '16px 24px' }}>
+                                            <div style={{ background: 'rgba(139, 92, 246, 0.1)', color: '#a78bfa', padding: '2px 8px', borderRadius: 12, display: 'inline-block', fontSize: 11, fontWeight: 600 }}>
+                                                {s.roll_number}
+                                            </div>
+                                        </td>
+                                        <td style={{ padding: '16px 24px', color: 'rgba(255,255,255,0.8)' }}>
+                                            <span style={{ color: '#60a5fa', fontWeight: 600 }}>
+                                                {getMappedDept(s.department)}
+                                            </span>
+                                        </td>
+                                        <td style={{ padding: '16px 24px', color: 'rgba(255,255,255,0.6)' }}>
+                                            Year {s.year || 1}
+                                        </td>
+                                        <td style={{ padding: '16px 24px' }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#10b981', fontWeight: 700 }}>
+                                                <Star size={14} fill="#10b981" /> {s.rating || 0}
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
                     </div>
-                )}
-                </>
+                    {visibleCount < filteredData.length && (
+                        <div style={{ padding: '16px 24px', borderTop: '1px solid rgba(255,255,255,0.05)', textAlign: 'center' }}>
+                            <button 
+                                onClick={() => setVisibleCount(v => v + 24)}
+                                style={{
+                                    background: 'transparent', border: 'none', color: '#60a5fa',
+                                    fontSize: 13, fontWeight: 600, cursor: 'pointer'
+                                }}
+                            >
+                                Load More Students
+                            </button>
+                        </div>
+                    )}
+                </div>
             )}
         </div>
     );

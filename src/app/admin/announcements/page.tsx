@@ -51,7 +51,7 @@ export default function AnnouncementsPage() {
     const getColor = (type: string) => {
         if (type === 'ACADEMIC') return '#f59e0b';
         if (type === 'EVENTS') return '#8b5cf6';
-        if (type === 'DISCIPLINE') return '#ef4444';
+        if (type === 'ALERTS') return '#ef4444';
         return '#3b82f6';
     };
 
@@ -148,7 +148,7 @@ export default function AnnouncementsPage() {
                                     <option value="GENERAL">General</option>
                                     <option value="ACADEMIC">Academic</option>
                                     <option value="EVENTS">Events</option>
-                                    <option value="DISCIPLINE">Discipline</option>
+                                    <option value="ALERTS">Alerts</option>
                                 </select>
                             </div>
                             <div style={{ marginBottom: 24 }}>

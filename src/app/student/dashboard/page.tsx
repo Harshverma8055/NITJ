@@ -35,7 +35,7 @@ export default function StudentDashboard() {
                 <div>
                     <h1 style={{ fontSize: 32, fontWeight: 700, margin: '0 0 8px 0' }}>Welcome, {student.user?.name || 'Doe'}</h1>
                     <p style={{ color: 'rgba(255,255,255,0.5)', margin: 0, fontSize: 16 }}>
-                        Keep reporting campus issues to grow your discipline rating.
+                        Keep reporting campus issues to grow your Pulse.
                     </p>
                 </div>
                 <button 
@@ -70,20 +70,14 @@ export default function StudentDashboard() {
                         The Pulse Protocol
                     </h2>
                     <p style={{ fontSize: 16, color: 'rgba(255,255,255,0.7)', lineHeight: 1.6, margin: 0 }}>
-                        Earn discipline points by actively reporting infrastructure issues, verifying fixes, and contributing to a safer, cleaner campus environment. Your Pulse rating represents your impact.
+                        Earn Pulse by actively reporting infrastructure issues, verifying fixes, and contributing to a safer, cleaner campus environment. Your Pulse represents your impact.
                     </p>
-                    <button 
-                        onClick={() => router.push('/about')}
-                        style={{ marginTop: 24, background: 'rgba(99,102,241,0.2)', border: '1px solid rgba(99,102,241,0.4)', padding: '10px 20px', borderRadius: 20, color: '#818cf8', fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s' }}
-                    >
-                        Learn More
-                    </button>
                 </div>
                 
                 <div style={{ zIndex: 1, display: 'flex', justifyContent: 'center', flex: '1 1 300px' }}>
                     <img 
                         src="/pulse-logo.png" 
-                        alt="Pulse Rating" 
+                        alt="Pulse"
                         style={{ height: 220, width: 'auto', objectFit: 'contain', filter: 'drop-shadow(0 0 60px rgba(99,102,241,0.4))' }} 
                     />
                 </div>

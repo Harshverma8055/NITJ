@@ -11,12 +11,21 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
             .from('complaints')
             .select(`
                 *,
-                staff:assigned_staff_id(id, department, users:user_id(name))
+                staff:assigned_staff_id(id, department, users:user_id(name)),
+                complaint_updates (
+                    id, note, new_status, created_at,
+                    posted_by_user_id,
+                    posted_by:users!posted_by_user_id (name, role)
+                )
             `)
             .eq('id', id)
             .single();
 
-        if (error || !complaint) {
+        if (error) {
+            console.error("Fetch complaint error:", error);
+            return NextResponse.json({ error: error.message || 'Complaint not found' }, { status: 404 });
+        }
+        if (!complaint) {
             return NextResponse.json({ error: 'Complaint not found' }, { status: 404 });
         }
 
@@ -49,7 +58,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
             // 1. Get the complaint to find category and reporter
             const { data: complaint, error: fetchErr } = await supabase
                 .from('complaints')
-                .select('category, reporter_student_id, status')
+                .select('category, reporter_student_id, status, is_emergency')
                 .eq('id', id)
                 .single();
 
@@ -89,6 +98,23 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
                 id,
                 JSON.stringify({ category: complaint.category, assigned_staff: staff ? staff.id : null })
             );
+
+            // 4. Update Pulse Rating for the reporter
+            if (complaint.reporter_student_id) {
+                const pointsToAdd = complaint.is_emergency ? 15 : 5;
+                const { data: student } = await supabase
+                    .from('students')
+                    .select('rating')
+                    .eq('id', complaint.reporter_student_id)
+                    .single();
+                
+                if (student) {
+                    await supabase
+                        .from('students')
+                        .update({ rating: (student.rating || 0) + pointsToAdd })
+                        .eq('id', complaint.reporter_student_id);
+                }
+            }
 
             return NextResponse.json({ success: true, message: 'Complaint approved and assigned!' });
         }

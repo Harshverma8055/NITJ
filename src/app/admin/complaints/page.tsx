@@ -26,7 +26,7 @@ export default function AdminComplaintsPage() {
     const filtered = complaints.filter((c: any) => {
         if (filter === 'All Complaints') return true;
         if (filter === 'Pending Review') return c.status === 'PENDING_REVIEW';
-        if (filter === 'Active / Working') return c.status === 'IN_PROGRESS' || c.status === 'PENDING_REVIEW';
+        if (filter === 'Active / Working') return c.status === 'IN_PROGRESS' || c.status === 'ASSIGNED';
         if (filter === 'Resolved / Completed') return c.status === 'RESOLVED';
         if (filter === 'Emergencies') return c.is_emergency;
         return true;
@@ -117,12 +117,12 @@ export default function AdminComplaintsPage() {
                                         {isEmergency ? <AlertTriangle size={14} /> : <Zap size={14} />} 
                                         {isEmergency ? 'EMERGENCY' : c.priority === 'LOW' ? 'LOW PRIORITY' : 'MODERATE'}
                                     </div>
-                                    <div style={{ 
-                                        background: isResolved ? 'rgba(16,185,129,0.1)' : isWorking ? 'rgba(6,182,212,0.1)' : 'rgba(59,130,246,0.1)',
-                                        color: isResolved ? '#10b981' : isWorking ? '#06b6d4' : '#3b82f6',
+                                    <div style={{
+                                        background: isResolved ? 'rgba(16,185,129,0.1)' : isWorking ? 'rgba(6,182,212,0.1)' : isPending ? 'rgba(245,158,11,0.1)' : 'rgba(59,130,246,0.1)',
+                                        color: isResolved ? '#10b981' : isWorking ? '#06b6d4' : isPending ? '#f59e0b' : '#3b82f6',
                                         padding: '4px 12px', borderRadius: 12, fontSize: 11, fontWeight: 700
                                     }}>
-                                        {isResolved ? 'Resolved' : isWorking ? 'Work In Progress' : 'Approved'}
+                                        {isResolved ? 'Resolved' : isWorking ? 'Work In Progress' : isPending ? 'Pending Review' : 'Approved'}
                                     </div>
                                 </div>
 
