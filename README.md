@@ -1,8 +1,8 @@
-# CampusNiti – Smart Campus Infrastructure Platform
+# Campus Pulse – Smart Campus Infrastructure Platform
 
-![CampusNiti Banner](https://via.placeholder.com/1200x300/1e1b4b/818cf8?text=CampusNiti+Smart+Operations)
+![Campus Pulse Banner](https://via.placeholder.com/1200x300/1e1b4b/818cf8?text=Campus Pulse+Smart+Operations)
 
-**CampusNiti** is a comprehensive, production-ready Smart Campus Operations Platform designed exclusively for educational institutions. The core objective of the platform is to centralize campus infrastructure management, streamline maintenance operations, and foster student engagement through a gamified reward system.
+**Campus Pulse** is a comprehensive, production-ready Smart Campus Operations Platform designed exclusively for educational institutions. The core objective of the platform is to centralize campus infrastructure management, streamline maintenance operations, and foster student engagement through a gamified reward system.
 
 ## 🚀 Features
 - **Issue Reporting:** Report broken infrastructure, electrical faults, and network issues instantly.

@@ -66,7 +66,7 @@ export default function LoginPage() {
                     <div className="logo-icon">
                         {isResetMode ? <KeyRound size={28} color="white" /> : <Shield size={28} color="white" />}
                     </div>
-                    <h1>{isResetMode ? 'Reset Password' : 'NITJ Final Project'}</h1>
+                    <h1>{isResetMode ? 'Reset Password' : 'Campus Pulse'}</h1>
                     {!isResetMode && (
                         <p style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
                             <Sparkles size={14} /> Campus Infrastructure Management System <Sparkles size={14} />

@@ -1,5 +1,5 @@
 /**
- * NITJ Final Project — Intelligent Department Routing Engine
+ * Campus Pulse — Intelligent Department Routing Engine
  */
 
 import type { ComplaintCategory, CampusZone, ComplaintSeverity, ComplaintPriority } from './complaints';

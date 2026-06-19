@@ -2,7 +2,7 @@ import { MetadataRoute } from 'next';
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: 'NITJ Final Project',
+    name: 'Campus Pulse',
     short_name: 'NITJ Project',
     description: 'Campus Management System',
     start_url: '/',

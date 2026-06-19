@@ -53,7 +53,7 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
                         <Shield size={20} color="white" />
                     </div>
                     <div>
-                        <h2 style={{ margin: 0, fontSize: 16, color: 'white', fontWeight: 700 }}>NITJ Final Project</h2>
+                        <h2 style={{ margin: 0, fontSize: 16, color: 'white', fontWeight: 700 }}>Campus Pulse</h2>
                         <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)', letterSpacing: 1 }}>STUDENT PANEL</span>
                     </div>
                 </div>

@@ -5,7 +5,7 @@ import PWARegister from "@/components/PWARegister";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "NITJ Final Project - Campus Management System",
+  title: "Campus Pulse - Campus Management System",
   description: "A centralized ecosystem for transparent campus management.",
 };
 

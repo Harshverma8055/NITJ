@@ -14,7 +14,7 @@ export default function AboutPage() {
                 }}>
                     <Shield size={32} color="white" />
                 </div>
-                <h1 style={{ fontSize: 42, fontWeight: 800, margin: '0 0 8px 0', letterSpacing: -0.5 }}>NITJ Final Project</h1>
+                <h1 style={{ fontSize: 42, fontWeight: 800, margin: '0 0 8px 0', letterSpacing: -0.5 }}>Campus Pulse</h1>
                 <div style={{ color: 'rgba(255,255,255,0.6)', fontSize: 15, display: 'flex', alignItems: 'center', gap: 8 }}>
                     <Sparkles size={16} color="#6366f1" /> Campus Infrastructure Management System <Sparkles size={16} color="#6366f1" />
                 </div>
@@ -62,7 +62,7 @@ export default function AboutPage() {
                             25103063
                         </div>
                         <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: 13, lineHeight: 1.6, margin: '0 0 16px 0' }}>
-                            Conceived, designed, and led the development of NITJ Final Project from the ground up — architecting the full-stack infrastructure, database schema, and all core features.
+                            Conceived, designed, and led the development of Campus Pulse from the ground up — architecting the full-stack infrastructure, database schema, and all core features.
                         </p>
                         <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: 12 }}>Dept. of Computer Science & Engineering</div>
                     </div>
@@ -112,7 +112,7 @@ export default function AboutPage() {
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, marginBottom: 8 }}>
                     Made with <Heart size={12} fill="#ef4444" color="#ef4444" /> for our Campus
                 </div>
-                <div>© 2026 NITJ Final Project · All Rights Reserved</div>
+                <div>© 2026 Campus Pulse · All Rights Reserved</div>
             </div>
         </div>
     );

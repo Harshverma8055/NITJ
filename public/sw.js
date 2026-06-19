@@ -1,4 +1,4 @@
-const CACHE_NAME = 'campusniti-v1';
+const CACHE_NAME = 'campus-pulse-v1';
 
 self.addEventListener('install', (event) => {
   self.skipWaiting();
