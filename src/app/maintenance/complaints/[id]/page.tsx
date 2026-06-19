@@ -161,20 +161,21 @@ export default function MaintenanceComplaintDetail({ params }: { params: Promise
                         <h3 style={{ fontSize: 16, fontWeight: 600, color: 'white', display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
                             <MapPin size={18} color="#06b6d4" /> Exact Issue Location
                         </h3>
-                        <div style={{ height: 250, borderRadius: 12, overflow: 'hidden', border: '1px solid rgba(255,255,255,0.1)' }}>
-                            <iframe 
-                                width="100%" 
-                                height="100%" 
-                                frameBorder="0" 
-                                scrolling="no" 
-                                marginHeight={0} 
-                                marginWidth={0} 
-                                src={`https://www.openstreetmap.org/export/embed.html?bbox=${c.gps_lng - 0.005},${c.gps_lat - 0.005},${c.gps_lng + 0.005},${c.gps_lat + 0.005}&layer=mapnik&marker=${c.gps_lat},${c.gps_lng}`}
-                            ></iframe>
-                        </div>
-                        <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)', marginTop: 8 }}>
-                            Coordinates: {c.gps_lat.toFixed(6)}, {c.gps_lng.toFixed(6)}
-                            <a href={`https://www.google.com/maps?q=${c.gps_lat},${c.gps_lng}`} target="_blank" rel="noreferrer" style={{ marginLeft: 12, color: '#3b82f6', textDecoration: 'none' }}>Open in Google Maps</a>
+                        <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
+                            <div style={{ position: 'relative', width: 160, height: 160, borderRadius: 12, overflow: 'hidden', border: '1px solid rgba(255,255,255,0.1)', flexShrink: 0 }}>
+                                <iframe 
+                                    width="100%" height="100%" frameBorder="0" scrolling="no" marginHeight={0} marginWidth={0} 
+                                    src={`https://www.openstreetmap.org/export/embed.html?bbox=${c.gps_lng - 0.002},${c.gps_lat - 0.002},${c.gps_lng + 0.002},${c.gps_lat + 0.002}&layer=mapnik&marker=${c.gps_lat},${c.gps_lng}`}
+                                    style={{ pointerEvents: 'none' }}
+                                ></iframe>
+                                <a href={`https://www.google.com/maps?q=${c.gps_lat},${c.gps_lng}`} target="_blank" rel="noreferrer" style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', zIndex: 1 }} aria-label="Open Map"></a>
+                            </div>
+                            <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.5)' }}>
+                                <a href={`https://www.google.com/maps?q=${c.gps_lat},${c.gps_lng}`} target="_blank" rel="noreferrer" style={{ background: 'rgba(59,130,246,0.1)', color: '#3b82f6', padding: '8px 16px', borderRadius: 8, fontSize: 13, fontWeight: 600, textDecoration: 'none', display: 'inline-block', marginBottom: 12, border: '1px solid rgba(59,130,246,0.3)' }}>
+                                    Open in Google Maps ↗
+                                </a><br/>
+                                Coordinates: {c.gps_lat.toFixed(6)}, {c.gps_lng.toFixed(6)}
+                            </div>
                         </div>
                     </div>
                 )}

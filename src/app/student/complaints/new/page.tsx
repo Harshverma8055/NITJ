@@ -131,9 +131,15 @@ export default function NewComplaintPage() {
         if (step === 1 && !mediaFile) {
             // allow skipping photo but maybe warn? Let's just proceed
         }
-        if (step === 2 && (!category || !zone || !title)) {
-            setError('Please fill in category, zone, and title.');
-            return;
+        if (step === 2) {
+            if (!category || !zone || !title || description.length < 20) {
+                setError('Please fill in category, zone, title, and a description (min 20 chars).');
+                return;
+            }
+            if (!gpsLat && !building.trim()) {
+                setError('Please provide either GPS Location (in step 1) or Exact Location manually.');
+                return;
+            }
         }
         setError('');
         setStep(s => Math.min(3, s + 1));
@@ -271,7 +277,7 @@ export default function NewComplaintPage() {
                                     <MapPin size={18} /> GPS Auto-Capture
                                 </div>
                                 <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.5)' }}>
-                                    {locationStatus || 'Optional but recommended.'}
+                                    {locationStatus || 'Required if exact location is not provided manually.'}
                                 </div>
                             </div>
                             <button type="button" onClick={captureLocation} style={{ background: gpsLat ? '#10b981' : 'transparent', color: gpsLat ? 'white' : '#10b981', border: `1px solid ${gpsLat ? '#10b981' : 'rgba(16,185,129,0.5)'}`, padding: '10px 20px', borderRadius: 12, cursor: 'pointer', fontWeight: 600, transition: 'all 0.2s' }}>
@@ -291,6 +297,15 @@ export default function NewComplaintPage() {
                                 style={{ width: '100%', padding: '16px 20px', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12, color: 'white', outline: 'none', fontSize: 15 }}
                                 placeholder="Short description (e.g. Broken AC)"
                                 value={title} onChange={(e) => setTitle(e.target.value)} required
+                            />
+                        </div>
+
+                        <div style={{ marginBottom: 24 }}>
+                            <label style={{ display: 'block', marginBottom: 8, fontSize: 14, color: 'rgba(255,255,255,0.7)', fontWeight: 600 }}>Issue Description *</label>
+                            <textarea 
+                                style={{ width: '100%', minHeight: 120, padding: '16px 20px', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12, color: 'white', outline: 'none', fontSize: 15, resize: 'vertical' }}
+                                placeholder="Describe the issue in detail..."
+                                value={description} onChange={(e) => setDescription(e.target.value)} required
                             />
                         </div>
 
@@ -334,8 +349,9 @@ export default function NewComplaintPage() {
                         </div>
 
                         <div style={{ marginBottom: 24 }}>
-                            <label style={{ display: 'block', marginBottom: 8, fontSize: 14, color: 'rgba(255,255,255,0.7)', fontWeight: 600 }}>Exact Location</label>
+                            <label style={{ display: 'block', marginBottom: 8, fontSize: 14, color: 'rgba(255,255,255,0.7)', fontWeight: 600 }}>Exact Location {!gpsLat && '*'}</label>
                             <input type="text" placeholder="e.g. Block A, Room 204" value={building} onChange={e => setBuilding(e.target.value)} style={{ width: '100%', padding: '16px 20px', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12, color: 'white', outline: 'none' }} />
+                            {!gpsLat && <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)', marginTop: 8 }}>Required since GPS location was not captured.</div>}
                         </div>
 
                         <label style={{ 
@@ -382,6 +398,10 @@ export default function NewComplaintPage() {
                             <div style={{ display: 'grid', gridTemplateColumns: '150px 1fr', padding: 20, borderBottom: '1px solid rgba(255,255,255,0.05)', alignItems: 'center' }}>
                                 <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: 14, fontWeight: 600 }}>Title</div>
                                 <div style={{ color: 'white', fontSize: 15 }}>{title}</div>
+                            </div>
+                            <div style={{ display: 'grid', gridTemplateColumns: '150px 1fr', padding: 20, borderBottom: '1px solid rgba(255,255,255,0.05)', alignItems: 'start' }}>
+                                <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: 14, fontWeight: 600, marginTop: 4 }}>Description</div>
+                                <div style={{ color: 'white', fontSize: 15, whiteSpace: 'pre-wrap', lineHeight: 1.5 }}>{description}</div>
                             </div>
                             <div style={{ display: 'grid', gridTemplateColumns: '150px 1fr', padding: 20, borderBottom: '1px solid rgba(255,255,255,0.05)', alignItems: 'center' }}>
                                 <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: 14, fontWeight: 600 }}>Anonymous</div>

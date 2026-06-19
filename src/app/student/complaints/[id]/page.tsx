@@ -215,18 +215,23 @@ export default function StudentComplaintDetail({ params }: { params: Promise<{ i
                 {data.gps_lat && data.gps_lng && (
                     <div style={{ marginBottom: 20 }}>
                         <h3 style={{ fontSize: 15, color: 'var(--text-primary)', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 6 }}>
-                            <MapPin size={16} color="#3b82f6" /> Exact Issue Location
+                            <MapPin size={16} color="#3b82f6" /> GPS Location
                         </h3>
-                        <div style={{ height: 200, borderRadius: 'var(--radius-md)', overflow: 'hidden', border: '1px solid var(--border-color)' }}>
-                            <iframe 
-                                width="100%" 
-                                height="100%" 
-                                frameBorder="0" 
-                                scrolling="no" 
-                                marginHeight={0} 
-                                marginWidth={0} 
-                                src={`https://www.openstreetmap.org/export/embed.html?bbox=${data.gps_lng - 0.005},${data.gps_lat - 0.005},${data.gps_lng + 0.005},${data.gps_lat + 0.005}&layer=mapnik&marker=${data.gps_lat},${data.gps_lng}`}
-                            ></iframe>
+                        <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+                            <div style={{ position: 'relative', width: 120, height: 120, borderRadius: 8, overflow: 'hidden', border: '1px solid var(--border-color)', flexShrink: 0 }}>
+                                <iframe 
+                                    width="100%" height="100%" frameBorder="0" scrolling="no" marginHeight={0} marginWidth={0} 
+                                    src={`https://www.openstreetmap.org/export/embed.html?bbox=${data.gps_lng - 0.002},${data.gps_lat - 0.002},${data.gps_lng + 0.002},${data.gps_lat + 0.002}&layer=mapnik&marker=${data.gps_lat},${data.gps_lng}`}
+                                    style={{ pointerEvents: 'none' }}
+                                ></iframe>
+                                <a href={`https://www.google.com/maps?q=${data.gps_lat},${data.gps_lng}`} target="_blank" rel="noopener noreferrer" style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', zIndex: 1 }} aria-label="Open Map"></a>
+                            </div>
+                            <div style={{ fontSize: 13, color: 'var(--text-muted)' }}>
+                                <a href={`https://www.google.com/maps?q=${data.gps_lat},${data.gps_lng}`} target="_blank" rel="noopener noreferrer" className="btn" style={{ background: 'var(--bg-glass)', border: '1px solid var(--border-color)', color: 'var(--text-primary)', padding: '6px 12px', fontSize: 12, textDecoration: 'none', display: 'inline-block', marginBottom: 8, fontWeight: 600 }}>
+                                    Open in Google Maps ↗
+                                </a><br/>
+                                {data.gps_lat.toFixed(5)}, {data.gps_lng.toFixed(5)}
+                            </div>
                         </div>
                     </div>
                 )}
