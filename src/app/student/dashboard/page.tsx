@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Plus, ShieldCheck, Activity, MapPin, Award, CheckCircle, Clock, AlertTriangle } from 'lucide-react';
+import NotificationBell from '@/components/common/NotificationBell';
 
 export default function StudentDashboard() {
     const router = useRouter();
@@ -38,16 +39,19 @@ export default function StudentDashboard() {
                         Keep reporting campus issues to grow your Pulse.
                     </p>
                 </div>
-                <button 
-                    onClick={() => router.push('/student/complaints/new')}
-                    style={{
-                        background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)', color: 'white',
-                        border: 'none', padding: '12px 24px', borderRadius: 30, fontSize: 15, fontWeight: 600,
-                        display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', boxShadow: '0 4px 15px rgba(16,185,129,0.3)'
-                    }}
-                >
-                    <Plus size={20} /> Report a New Issue
-                </button>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                    <NotificationBell />
+                    <button 
+                        onClick={() => router.push('/student/complaints/new')}
+                        style={{
+                            background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)', color: 'white',
+                            border: 'none', padding: '12px 24px', borderRadius: 30, fontSize: 15, fontWeight: 600,
+                            display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', boxShadow: '0 4px 15px rgba(16,185,129,0.3)'
+                        }}
+                    >
+                        <Plus size={20} /> Report a New Issue
+                    </button>
+                </div>
             </div>
 
             {/* Pulse Banner */}
@@ -65,21 +69,13 @@ export default function StudentDashboard() {
                 flexWrap: 'wrap',
                 gap: 24
             }}>
-                <div style={{ zIndex: 1, flex: '1 1 400px' }}>
+                <div style={{ zIndex: 1, flex: 1 }}>
                     <h2 style={{ fontSize: 36, fontWeight: 800, margin: '0 0 16px 0', background: 'linear-gradient(to right, #818cf8, #c084fc)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
                         The Pulse Protocol
                     </h2>
                     <p style={{ fontSize: 16, color: 'rgba(255,255,255,0.7)', lineHeight: 1.6, margin: 0 }}>
                         Earn Pulse by actively reporting infrastructure issues, verifying fixes, and contributing to a safer, cleaner campus environment. Your Pulse represents your impact.
                     </p>
-                </div>
-                
-                <div style={{ zIndex: 1, display: 'flex', justifyContent: 'center', flex: '1 1 300px' }}>
-                    <img 
-                        src="/pulse-logo.png" 
-                        alt="Pulse"
-                        style={{ height: 220, width: 'auto', objectFit: 'contain', filter: 'drop-shadow(0 0 60px rgba(99,102,241,0.4))' }} 
-                    />
                 </div>
 
                 {/* Decorative background elements */}
@@ -100,28 +96,43 @@ export default function StudentDashboard() {
                     </div>
                 </div>
 
-                {/* Campus Rank */}
+                {/* Leaderboard Rank */}
                 <div style={{ background: '#0D0E12', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 16, padding: 24, display: 'flex', alignItems: 'center', gap: 20 }}>
                     <div style={{ width: 48, height: 48, borderRadius: '50%', background: 'rgba(245,158,11,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                         <Award size={24} color="#fbbf24" />
                     </div>
                     <div>
-                        <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)', fontWeight: 600, letterSpacing: 1, marginBottom: 4 }}>CAMPUS RANK</div>
-                        <div style={{ fontSize: 24, fontWeight: 700, display: 'flex', alignItems: 'baseline', gap: 4 }}>
-                            <span style={{ fontSize: 28 }}>#8</span>
-                            <span style={{ fontSize: 14, color: 'rgba(255,255,255,0.4)', fontWeight: 500 }}>/ 1000</span>
-                        </div>
+                        <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)', fontWeight: 600, letterSpacing: 1, marginBottom: 4 }}>LEADERBOARD RANK</div>
+                        {points === 0 ? (
+                            <div style={{ fontSize: 16, fontWeight: 700, color: 'rgba(255,255,255,0.5)' }}>
+                                Start your journey
+                            </div>
+                        ) : (
+                            <div style={{ fontSize: 24, fontWeight: 700, display: 'flex', alignItems: 'baseline', gap: 4 }}>
+                                <span style={{ fontSize: 28 }}>#{data.rank || 1}</span>
+                                <span style={{ fontSize: 14, color: 'rgba(255,255,255,0.4)', fontWeight: 500 }}>/ {data.totalStudents || 1}</span>
+                            </div>
+                        )}
                     </div>
                 </div>
 
-                {/* Current Status */}
+                {/* Account Status */}
                 <div style={{ background: '#0D0E12', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 16, padding: 24, display: 'flex', alignItems: 'center', gap: 20 }}>
-                    <div style={{ width: 48, height: 48, borderRadius: '50%', background: 'rgba(16,185,129,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22 }}>
-                        👍
+                    <div style={{ 
+                        width: 48, height: 48, borderRadius: '50%', 
+                        background: points === 0 ? 'rgba(255,255,255,0.03)' : 'rgba(16,185,129,0.05)', 
+                        display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22 
+                    }}>
+                        {points === 0 ? '💤' : '👍'}
                     </div>
                     <div>
-                        <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)', fontWeight: 600, letterSpacing: 1, marginBottom: 4 }}>CURRENT STATUS</div>
-                        <div style={{ fontSize: 24, fontWeight: 700, color: '#38bdf8' }}>Good</div>
+                        <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)', fontWeight: 600, letterSpacing: 1, marginBottom: 4 }}>ACCOUNT STATUS</div>
+                        <div style={{ 
+                            fontSize: 24, fontWeight: 700, 
+                            color: points === 0 ? 'rgba(255,255,255,0.4)' : '#38bdf8' 
+                        }}>
+                            {points === 0 ? 'Inactive' : 'Good'}
+                        </div>
                     </div>
                 </div>
             </div>

@@ -10,11 +10,12 @@ export async function GET() {
 
         // Removed Total Faculty and Pending Incidents queries
 
-        // 4. Total Complaints
+        // 4. Total Complaints (excludes PENDING_REVIEW and ANNOUNCEMENT)
         const { count: totalComplaints } = await supabaseAdmin
             .from('complaints')
             .select('*', { count: 'exact', head: true })
-            .neq('category', 'ANNOUNCEMENT');
+            .neq('category', 'ANNOUNCEMENT')
+            .not('status', 'eq', 'PENDING_REVIEW');
 
         // Pending Complaints
         const { count: pendingComplaints } = await supabaseAdmin

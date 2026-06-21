@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
-import { AlertTriangle, Wrench, CheckCircle, Clock, UserPlus, Zap, Image as ImageIcon, MapPin, MessageCircle } from 'lucide-react';
+import { AlertTriangle, Wrench, CheckCircle, Clock, UserPlus, Zap, Image as ImageIcon, MapPin, MessageCircle, Eye, ThumbsUp } from 'lucide-react';
 import { getSLATimeLeft, PRIORITY_LABELS, STATUS_LABELS, ZONE_LABELS, getPriorityColor, getStatusColor, getCategoryIcon } from '@/lib/complaints';
 import type { ComplaintListItem } from '@/lib/complaints';
 
@@ -34,10 +34,10 @@ export default function MaintenanceHistory() {
         }
 
         const deptParam = deptCode ? `&department=${encodeURIComponent(deptCode)}` : '';
-        const res = await fetch(`/api/complaints?sort=priority&limit=50&status=APPROVED,ASSIGNED${deptParam}`);
+        const res = await fetch(`/api/complaints?sort=latest&limit=50&status=APPROVED,ASSIGNED${deptParam}`);
         const data = await res.json();
         
-        const res2 = await fetch(`/api/complaints?sort=priority&limit=50&status=IN_PROGRESS${deptParam}`);
+        const res2 = await fetch(`/api/complaints?sort=latest&limit=50&status=IN_PROGRESS${deptParam}`);
         const data2 = await res2.json();
 
         const res3 = await fetch(`/api/complaints?sort=resolved_at&limit=50&status=RESOLVED${deptParam}`);
@@ -60,7 +60,8 @@ export default function MaintenanceHistory() {
     }
 
     async function updateStatus(id: string, newStatus: 'ASSIGNED' | 'IN_PROGRESS' | 'RESOLVED', requireNote = true) {
-        const note = noteMap[id]?.trim() || (requireNote ? '' : 'Job accepted');
+        const defaultNote = newStatus === 'IN_PROGRESS' ? 'Work started on the complaint' : 'Job accepted';
+        const note = noteMap[id]?.trim() || (requireNote ? '' : defaultNote);
         if (requireNote && !note && newStatus !== 'ASSIGNED') { 
             alert('Please add a progress note before updating status.'); 
             return; 
@@ -216,68 +217,77 @@ export default function MaintenanceHistory() {
                                 )}
                             </div>
 
-                            <div style={{ padding: '16px', flex: 1, display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                                {/* Top Row: Priority + Status */}
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                    <span style={{ 
-                                        color: getPriorityColor(c.priority), 
-                                        fontWeight: 700, 
-                                        fontSize: 11, 
-                                        textTransform: 'uppercase', 
-                                        letterSpacing: 1, 
-                                        display: 'flex', 
-                                        alignItems: 'center', 
-                                        gap: 4 
-                                    }}>
-                                        {c.priority === 'LOW' && <Zap size={14} fill={getPriorityColor(c.priority)} />}
-                                        {c.priority === 'MODERATE' && <AlertTriangle size={14} fill={getPriorityColor(c.priority)} />}
-                                        {c.priority === 'HIGH' && <AlertTriangle size={14} fill={getPriorityColor(c.priority)} />}
-                                        {c.priority === 'CRITICAL' && <AlertTriangle size={14} fill={getPriorityColor(c.priority)} />}
-                                        {c.priority === 'EMERGENCY' && <AlertTriangle size={14} fill={getPriorityColor(c.priority)} />}
-                                        {PRIORITY_LABELS[c.priority]}
-                                    </span>
-                                    <span style={{
-                                        background: `${getStatusColor(c.status)}20`,
-                                        color: getStatusColor(c.status),
-                                        border: `1px solid ${getStatusColor(c.status)}50`,
-                                        borderRadius: 20, padding: '3px 10px', fontSize: 11, fontWeight: 600,
-                                    }}>
-                                        {STATUS_LABELS[c.status]}
-                                    </span>
-                                </div>
-                                
-                                {/* Title */}
-                                <h3 style={{ margin: '0', fontSize: 16, fontWeight: 700, color: 'var(--text-primary)', lineHeight: 1.4 }}>
-                                    {c.title}
-                                </h3>
-                                
-                                {/* Location */}
-                                <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'var(--text-muted)', fontSize: 13 }}>
-                                    <MapPin size={13} />
-                                    <span>{ZONE_LABELS[c.zone]}{c.building ? ` · ${c.building}` : ''}</span>
-                                </div>
-                                
-                                {/* Bottom Row: comments, time */}
-                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginTop: '4px' }}>
-                                    <span style={{ display: 'flex', alignItems: 'center', gap: 5, color: 'var(--text-muted)', fontSize: 13 }}>
-                                        <MessageCircle size={14} /> {c.comment_count}
-                                    </span>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: 5, color: 'var(--text-muted)', fontSize: 12 }}>
-                                        <Clock size={12} />
-                                        {c.reporter && !c.is_anonymous
-                                            ? `${c.reporter.name}${c.reporter.rollNumber ? ` (${c.reporter.rollNumber})` : ''} · `
-                                            : c.is_anonymous ? 'Anonymous · ' : ''}
-                                        {(() => {
-                                            const ms = Date.now() - new Date(c.created_at).getTime();
-                                            const d = Math.floor(ms / 86400000);
-                                            const h = Math.floor((ms % 86400000) / 3600000);
-                                            if (d > 0) return `${d}d ago`;
-                                            if (h > 0) return `${h}h ago`;
-                                            return `${Math.floor(ms / 60000)}m ago`;
-                                        })()}
+                            <a href={`/maintenance/complaints/${c.id}`} style={{ textDecoration: 'none', color: 'inherit', flex: 1, display: 'flex', flexDirection: 'column' }}>
+                                <div style={{ padding: '16px', flex: 1, display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                                    {/* Top Row: Emergency indicator + Status */}
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                        {c.priority === 'EMERGENCY' ? (
+                                            <span style={{
+                                                color: '#ef4444',
+                                                fontWeight: 700,
+                                                fontSize: 11,
+                                                textTransform: 'uppercase',
+                                                letterSpacing: 1,
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                gap: 4
+                                            }}>
+                                                <AlertTriangle size={14} fill="#ef4444" /> EMERGENCY
+                                            </span>
+                                        ) : <span />}
+                                        <span style={{
+                                            background: `${getStatusColor(c.status)}20`,
+                                            color: getStatusColor(c.status),
+                                            border: `1px solid ${getStatusColor(c.status)}50`,
+                                            borderRadius: 20, padding: '3px 10px', fontSize: 11, fontWeight: 600,
+                                        }}>
+                                            {STATUS_LABELS[c.status]}
+                                        </span>
+                                    </div>
+                                    
+                                    {/* Title */}
+                                    <h3 style={{ margin: '0', fontSize: 16, fontWeight: 700, color: 'var(--text-primary)', lineHeight: 1.4 }}>
+                                        {c.title}
+                                    </h3>
+                                    
+                                    {/* Location */}
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'var(--text-muted)', fontSize: 13 }}>
+                                        <MapPin size={13} />
+                                        <span>{ZONE_LABELS[c.zone]}{c.building ? ` · ${c.building}` : ''}</span>
+                                    </div>
+                                    
+                                    {/* Bottom Row: upvotes, comments, time */}
+                                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginTop: '4px' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                                            <span style={{ display: 'flex', alignItems: 'center', gap: 5, color: 'var(--text-muted)', fontSize: 13 }} title={`${c.upvote_count ?? 0} Upvotes`}>
+                                                <ThumbsUp size={14} /> {c.upvote_count ?? 0}
+                                            </span>
+                                            <span style={{ display: 'flex', alignItems: 'center', gap: 5, color: 'var(--text-muted)', fontSize: 13 }} title={`${c.comment_count} Comments`}>
+                                                <MessageCircle size={14} /> {c.comment_count}
+                                            </span>
+                                        </div>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: 5, color: 'var(--text-muted)', fontSize: 12 }}>
+                                            <Clock size={12} />
+                                            {c.reporter && !c.is_anonymous
+                                                ? `${c.reporter.name}${c.reporter.rollNumber ? ` (${c.reporter.rollNumber})` : ''} · `
+                                                : c.is_anonymous ? 'Anonymous · ' : ''}
+                                            {(() => {
+                                                const ms = Date.now() - new Date(c.created_at).getTime();
+                                                const d = Math.floor(ms / 86400000);
+                                                const h = Math.floor((ms % 86400000) / 3600000);
+                                                if (d > 0) return `${d}d ago`;
+                                                if (h > 0) return `${h}h ago`;
+                                                return `${Math.floor(ms / 60000)}m ago`;
+                                            })()}
+                                        </div>
+                                    </div>
+
+                                    {/* View Details link */}
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#06b6d4', fontSize: 13, fontWeight: 600, marginTop: 4 }}>
+                                        <Eye size={14} /> View Full Details →
                                     </div>
                                 </div>
-                            </div>
+                            </a>
 
                             {/* Action Area */}
                             <div style={{ padding: '16px', borderTop: '1px solid var(--border-color)', background: 'var(--bg-glass)' }}>

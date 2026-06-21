@@ -1,9 +1,11 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
-import { AlertTriangle, Wrench, CheckCircle, Clock, UserPlus, Zap, Image as ImageIcon, MapPin, MessageCircle } from 'lucide-react';
+import { AlertTriangle, Wrench, CheckCircle, Clock, UserPlus, Zap, Image as ImageIcon, MapPin, MessageCircle, Eye, ThumbsUp } from 'lucide-react';
 import { getSLATimeLeft, PRIORITY_LABELS, STATUS_LABELS, ZONE_LABELS, getPriorityColor, getStatusColor, getCategoryIcon } from '@/lib/complaints';
 import type { ComplaintListItem } from '@/lib/complaints';
+import NotificationBell from '@/components/common/NotificationBell';
+
 
 export default function MaintenanceDashboard() {
     const [complaints, setComplaints] = useState<ComplaintListItem[]>([]);
@@ -11,6 +13,8 @@ export default function MaintenanceDashboard() {
     const [updating, setUpdating]     = useState<string | null>(null);
     const [noteMap, setNoteMap]       = useState<Record<string, string>>({});
     const [fileMap, setFileMap]       = useState<Record<string, File>>({});
+    const [sortBy, setSortBy]         = useState<'latest' | 'upvotes'>('latest');
+
 
     const [userDept, setUserDept]     = useState<string | null>(null);
     const [myId, setMyId]             = useState<string | null>(null);
@@ -34,10 +38,10 @@ export default function MaintenanceDashboard() {
         }
 
         const deptParam = deptCode ? `&department=${encodeURIComponent(deptCode)}` : '';
-        const res = await fetch(`/api/complaints?sort=priority&limit=50&status=APPROVED,ASSIGNED${deptParam}`);
+        const res = await fetch(`/api/complaints?sort=latest&limit=50&status=APPROVED,ASSIGNED${deptParam}`);
         const data = await res.json();
         
-        const res2 = await fetch(`/api/complaints?sort=priority&limit=50&status=IN_PROGRESS${deptParam}`);
+        const res2 = await fetch(`/api/complaints?sort=latest&limit=50&status=IN_PROGRESS${deptParam}`);
         const data2 = await res2.json();
 
         const res3 = await fetch(`/api/complaints?sort=resolved_at&limit=50&status=RESOLVED${deptParam}`);
@@ -60,7 +64,8 @@ export default function MaintenanceDashboard() {
     }
 
     async function updateStatus(id: string, newStatus: 'ASSIGNED' | 'IN_PROGRESS' | 'RESOLVED', requireNote = true) {
-        const note = noteMap[id]?.trim() || (requireNote ? '' : 'Job accepted');
+        const defaultNote = newStatus === 'IN_PROGRESS' ? 'Work started on the complaint' : 'Job accepted';
+        const note = noteMap[id]?.trim() || (requireNote ? '' : defaultNote);
         if (requireNote && !note && newStatus !== 'ASSIGNED') { 
             alert('Please add a progress note before updating status.'); 
             return; 
@@ -119,6 +124,14 @@ export default function MaintenanceDashboard() {
 
     const resolved = complaints.filter(c => c.status === 'RESOLVED' && (c.assigned_staff_id === myId || role === 'ADMIN'));
 
+    const sortedPendingTasks = [...myTasks, ...availableJobs].sort((a, b) => {
+        if (sortBy === 'latest') {
+            return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+        } else {
+            return (b.upvote_count ?? 0) - (a.upvote_count ?? 0);
+        }
+    });
+
     const breachedCount = complaints.filter(c => c.sla_breached).length;
 
     const inputStyle = {
@@ -131,15 +144,21 @@ export default function MaintenanceDashboard() {
 
     return (
         <div>
-            <div className="page-header" style={{ marginBottom: '24px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                    <h1>{userDept ? `${userDept.replace(/_/g, ' ')} Panel` : 'Maintenance Dashboard'}</h1>
-                    <span style={{ background: 'rgba(6, 182, 212, 0.15)', color: '#06b6d4', padding: '4px 12px', borderRadius: '20px', fontSize: '0.85rem', fontWeight: 600 }}>
-                        <Wrench size={14} style={{ display: 'inline-block', marginRight: '6px', verticalAlign: '-2px' }} />
-                        Staff Console
-                    </span>
+
+            <div className="page-header" style={{ marginBottom: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                <div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        <h1>{userDept ? `${userDept.replace(/_/g, ' ')} Panel` : 'Maintenance Dashboard'}</h1>
+                        <span style={{ background: 'rgba(6, 182, 212, 0.15)', color: '#06b6d4', padding: '4px 12px', borderRadius: '20px', fontSize: '0.85rem', fontWeight: 600 }}>
+                            <Wrench size={14} style={{ display: 'inline-block', marginRight: '6px', verticalAlign: '-2px' }} />
+                            Staff Console
+                        </span>
+                    </div>
+                    <p>Manage your real-world maintenance workflow. Pick up available jobs and track your progress.</p>
                 </div>
-                <p>Manage your real-world maintenance workflow. Pick up available jobs and track your progress.</p>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                    <NotificationBell />
+                </div>
             </div>
 
             {role === 'ADMIN' && (
@@ -179,28 +198,57 @@ export default function MaintenanceDashboard() {
             <Section 
                 title="Pending Tasks" 
                 subtitle="Compulsory tasks assigned by administration. Click start when you begin working on them."
-                items={[...myTasks, ...availableJobs]} 
+                items={sortedPendingTasks} 
                 icon={<Zap size={18} />} 
                 color="#f59e0b" 
+                headerExtra={
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 12 }}>
+                        <span style={{ fontSize: 13, color: 'var(--text-muted)', fontWeight: 600 }}>Sort by:</span>
+                        <div style={{ display: 'flex', gap: 8, background: 'rgba(255, 255, 255, 0.02)', padding: 4, borderRadius: 10, border: '1px solid rgba(255, 255, 255, 0.05)' }}>
+                            <button
+                                onClick={() => setSortBy('latest')}
+                                style={{
+                                    background: sortBy === 'latest' ? 'rgba(6, 182, 212, 0.15)' : 'transparent',
+                                    color: sortBy === 'latest' ? '#06b6d4' : 'var(--text-muted)',
+                                    border: 'none',
+                                    padding: '6px 14px',
+                                    borderRadius: 8,
+                                    cursor: 'pointer',
+                                    fontSize: 12,
+                                    fontWeight: 600,
+                                    transition: 'all 0.2s',
+                                }}
+                            >
+                                Latest
+                            </button>
+                            <button
+                                onClick={() => setSortBy('upvotes')}
+                                style={{
+                                    background: sortBy === 'upvotes' ? 'rgba(6, 182, 212, 0.15)' : 'transparent',
+                                    color: sortBy === 'upvotes' ? '#06b6d4' : 'var(--text-muted)',
+                                    border: 'none',
+                                    padding: '6px 14px',
+                                    borderRadius: 8,
+                                    cursor: 'pointer',
+                                    fontSize: 12,
+                                    fontWeight: 600,
+                                    transition: 'all 0.2s',
+                                }}
+                            >
+                                Upvotes
+                            </button>
+                        </div>
+                    </div>
+                }
                 renderAction={(c) => (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                        {c.status === 'APPROVED' && !c.assigned_staff_id ? (
-                            <button
-                                disabled={updating === c.id}
-                                onClick={() => updateStatus(c.id, 'ASSIGNED', false)}
-                                style={{ padding: '10px 20px', background: '#3b82f6', border: 'none', borderRadius: '8px', cursor: 'pointer', color: 'white', fontWeight: 600, fontSize: 13, display: 'flex', alignItems: 'center', gap: 6, width: '100%', justifyContent: 'center', boxShadow: '0 4px 12px rgba(59, 130, 246, 0.3)' }}>
-                                <UserPlus size={16} />
-                                {updating === c.id ? 'Accepting...' : 'Accept Job'}
-                            </button>
-                        ) : (
-                            <button
-                                disabled={updating === c.id}
-                                onClick={() => updateStatus(c.id, 'IN_PROGRESS', false)}
-                                style={{ padding: '10px 20px', background: '#3b82f6', border: 'none', borderRadius: '8px', cursor: 'pointer', color: 'white', fontWeight: 600, fontSize: 13, display: 'flex', alignItems: 'center', gap: 6, width: '100%', justifyContent: 'center', boxShadow: '0 4px 12px rgba(59, 130, 246, 0.3)' }}>
-                                <Wrench size={16} />
-                                {updating === c.id ? 'Starting...' : 'Start Work'}
-                            </button>
-                        )}
+                        <button
+                            disabled={updating === c.id}
+                            onClick={() => updateStatus(c.id, 'IN_PROGRESS', false)}
+                            style={{ padding: '10px 20px', background: '#3b82f6', border: 'none', borderRadius: '8px', cursor: 'pointer', color: 'white', fontWeight: 600, fontSize: 13, display: 'flex', alignItems: 'center', gap: 6, width: '100%', justifyContent: 'center', boxShadow: '0 4px 12px rgba(59, 130, 246, 0.3)' }}>
+                            <Wrench size={16} />
+                            {updating === c.id ? 'Starting...' : 'Start Work'}
+                        </button>
                     </div>
                 )}
             />
@@ -228,34 +276,53 @@ export default function MaintenanceDashboard() {
                             <label style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 8, display: 'flex', alignItems: 'center', gap: '6px' }}>
                                 <ImageIcon size={14} /> Work Evidence (Required)
                             </label>
-                            <label style={{
-                                display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-                                border: fileMap[c.id] ? '2px solid #10b981' : '2px dashed var(--border-color)',
-                                background: fileMap[c.id] ? 'rgba(16, 185, 129, 0.05)' : 'var(--bg-glass)',
-                                padding: '24px 16px', borderRadius: '8px', cursor: 'pointer', transition: 'all 0.2s'
-                            }}>
-                                <input
-                                    type="file"
-                                    accept="image/*"
-                                    onChange={e => {
-                                        const file = e.target.files?.[0];
-                                        if (file) setFileMap(prev => ({ ...prev, [c.id]: file }));
-                                    }}
-                                    style={{ display: 'none' }}
-                                />
-                                {fileMap[c.id] ? (
-                                    <>
-                                        <CheckCircle size={24} color="#10b981" style={{ marginBottom: '8px' }} />
-                                        <span style={{ color: '#10b981', fontWeight: 600, fontSize: '13px' }}>{fileMap[c.id].name}</span>
-                                    </>
-                                ) : (
-                                    <>
-                                        <ImageIcon size={24} color="var(--text-muted)" style={{ marginBottom: '8px' }} />
-                                        <span style={{ color: 'var(--text-primary)', fontWeight: 500, fontSize: '13px' }}>Tap to take a photo or upload</span>
-                                        <span style={{ color: 'var(--text-muted)', fontSize: '11px', marginTop: '4px' }}>PNG, JPG up to 10MB</span>
-                                    </>
-                                )}
-                            </label>
+
+                            {fileMap[c.id] ? (
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 14px', background: 'rgba(16,185,129,0.08)', border: '2px solid #10b981', borderRadius: 8 }}>
+                                        <CheckCircle size={20} color="#10b981" />
+                                        <span style={{ color: '#10b981', fontWeight: 600, fontSize: 13, flex: 1 }}>{fileMap[c.id].name}</span>
+                                    </div>
+                                    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                                        <button type="button" onClick={() => setFileMap(prev => { const copy = { ...prev }; delete copy[c.id]; return copy; })} style={{ cursor: 'pointer', background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.4)', color: '#ef4444', padding: '6px 14px', borderRadius: 8, fontSize: 12, fontWeight: 600 }}>
+                                            ✕ Remove
+                                        </button>
+                                        <label style={{ cursor: 'pointer', background: 'rgba(6,182,212,0.1)', border: '1px solid rgba(6,182,212,0.4)', color: '#06b6d4', padding: '6px 14px', borderRadius: 8, fontSize: 12, fontWeight: 600 }}>
+                                            <input type="file" accept="image/*" capture="environment" onChange={e => { const f = e.target.files?.[0]; if (f) setFileMap(prev => ({ ...prev, [c.id]: f })); }} style={{ display: 'none' }} />
+                                            📷 Retake
+                                        </label>
+                                        <label style={{ cursor: 'pointer', background: 'rgba(139,92,246,0.1)', border: '1px solid rgba(139,92,246,0.4)', color: '#8b5cf6', padding: '6px 14px', borderRadius: 8, fontSize: 12, fontWeight: 600 }}>
+                                            <input type="file" accept="image/*" onChange={e => { const f = e.target.files?.[0]; if (f) setFileMap(prev => ({ ...prev, [c.id]: f })); }} style={{ display: 'none' }} />
+                                            🖼️ Replace
+                                        </label>
+                                    </div>
+                                </div>
+                            ) : (
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                                    {/* Camera — opens native device camera */}
+                                    <label style={{
+                                        display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 6,
+                                        padding: '18px 12px', border: '2px solid rgba(6,182,212,0.4)', borderRadius: 10,
+                                        background: 'rgba(6,182,212,0.06)', cursor: 'pointer', transition: 'all 0.2s'
+                                    }}>
+                                        <input type="file" accept="image/*" capture="environment" onChange={e => { const f = e.target.files?.[0]; if (f) setFileMap(prev => ({ ...prev, [c.id]: f })); }} style={{ display: 'none' }} />
+                                        <span style={{ fontSize: 26 }}>📷</span>
+                                        <span style={{ color: '#06b6d4', fontWeight: 700, fontSize: 13 }}>Camera</span>
+                                        <span style={{ color: 'var(--text-muted)', fontSize: 11 }}>Take photo now</span>
+                                    </label>
+                                    {/* Gallery Button */}
+                                    <label style={{
+                                        display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 6,
+                                        padding: '18px 12px', border: '2px solid rgba(139,92,246,0.4)', borderRadius: 10,
+                                        background: 'rgba(139,92,246,0.06)', cursor: 'pointer', transition: 'all 0.2s'
+                                    }}>
+                                        <input type="file" accept="image/*" onChange={e => { const f = e.target.files?.[0]; if (f) setFileMap(prev => ({ ...prev, [c.id]: f })); }} style={{ display: 'none' }} />
+                                        <span style={{ fontSize: 26 }}>🖼️</span>
+                                        <span style={{ color: '#8b5cf6', fontWeight: 700, fontSize: 13 }}>Gallery</span>
+                                        <span style={{ color: 'var(--text-muted)', fontSize: 11 }}>Choose from device</span>
+                                    </label>
+                                </div>
+                            )}
                         </div>
                         
                         <button
@@ -270,29 +337,32 @@ export default function MaintenanceDashboard() {
             />
         </div>
     );
+}
 
-    // Helper component for rendering sections
-    function Section({ title, subtitle, items, icon, color, renderAction }: {
-        title: string; subtitle: string; items: ComplaintListItem[];
-        icon: React.ReactNode; color: string;
-        renderAction: (c: ComplaintListItem) => React.ReactNode;
-    }) {
-        if (items.length === 0) return null; // Don't show empty sections to keep UI clean
+// Helper component for rendering sections (declared at top-level to prevent losing input focus on state change)
+function Section({ title, subtitle, items, icon, color, renderAction, headerExtra }: {
+    title: string; subtitle: string; items: ComplaintListItem[];
+    icon: React.ReactNode; color: string;
+    renderAction: (c: ComplaintListItem) => React.ReactNode;
+    headerExtra?: React.ReactNode;
+}) {
+    if (items.length === 0) return null; // Don't show empty sections to keep UI clean
 
-        return (
-            <div style={{ marginBottom: 48 }}>
-                <div style={{ marginBottom: 20 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 4 }}>
-                        <div style={{ background: `${color}20`, color, padding: 8, borderRadius: 8 }}>{icon}</div>
-                        <h2 style={{ margin: 0, fontSize: 20, color: 'var(--text-primary)' }}>{title}</h2>
-                        <span style={{ background: `rgba(255,255,255,0.05)`, color: 'var(--text-secondary)', borderRadius: 20, padding: '2px 10px', fontSize: 13, fontWeight: 700 }}>
-                            {items.length}
-                        </span>
-                    </div>
-                    <p style={{ margin: '0 0 0 46px', color: 'var(--text-muted)', fontSize: '0.9rem' }}>{subtitle}</p>
+    return (
+        <div style={{ marginBottom: 48 }}>
+            <div style={{ marginBottom: 20 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 4 }}>
+                    <div style={{ background: `${color}20`, color, padding: 8, borderRadius: 8 }}>{icon}</div>
+                    <h2 style={{ margin: 0, fontSize: 20, color: 'var(--text-primary)' }}>{title}</h2>
+                    <span style={{ background: `rgba(255,255,255,0.05)`, color: 'var(--text-secondary)', borderRadius: 20, padding: '2px 10px', fontSize: 13, fontWeight: 700 }}>
+                        {items.length}
+                    </span>
                 </div>
+                <p style={{ margin: '0 0 0 46px', color: 'var(--text-muted)', fontSize: '0.9rem' }}>{subtitle}</p>
+                {headerExtra}
+            </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 20 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 20 }}>
                     {items.map(c => (
                         <div key={c.id} style={{
                             background: 'var(--bg-secondary)', borderRadius: '12px',
@@ -321,68 +391,77 @@ export default function MaintenanceDashboard() {
                                 )}
                             </div>
 
-                            <div style={{ padding: '16px', flex: 1, display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                                {/* Top Row: Priority + Status */}
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                    <span style={{ 
-                                        color: getPriorityColor(c.priority), 
-                                        fontWeight: 700, 
-                                        fontSize: 11, 
-                                        textTransform: 'uppercase', 
-                                        letterSpacing: 1, 
-                                        display: 'flex', 
-                                        alignItems: 'center', 
-                                        gap: 4 
-                                    }}>
-                                        {c.priority === 'LOW' && <Zap size={14} fill={getPriorityColor(c.priority)} />}
-                                        {c.priority === 'MODERATE' && <AlertTriangle size={14} fill={getPriorityColor(c.priority)} />}
-                                        {c.priority === 'HIGH' && <AlertTriangle size={14} fill={getPriorityColor(c.priority)} />}
-                                        {c.priority === 'CRITICAL' && <AlertTriangle size={14} fill={getPriorityColor(c.priority)} />}
-                                        {c.priority === 'EMERGENCY' && <AlertTriangle size={14} fill={getPriorityColor(c.priority)} />}
-                                        {PRIORITY_LABELS[c.priority]}
-                                    </span>
-                                    <span style={{
-                                        background: `${getStatusColor(c.status)}20`,
-                                        color: getStatusColor(c.status),
-                                        border: `1px solid ${getStatusColor(c.status)}50`,
-                                        borderRadius: 20, padding: '3px 10px', fontSize: 11, fontWeight: 600,
-                                    }}>
-                                        {STATUS_LABELS[c.status]}
-                                    </span>
-                                </div>
-                                
-                                {/* Title */}
-                                <h3 style={{ margin: '0', fontSize: 16, fontWeight: 700, color: 'var(--text-primary)', lineHeight: 1.4 }}>
-                                    {c.title}
-                                </h3>
-                                
-                                {/* Location */}
-                                <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'var(--text-muted)', fontSize: 13 }}>
-                                    <MapPin size={13} />
-                                    <span>{ZONE_LABELS[c.zone]}{c.building ? ` · ${c.building}` : ''}</span>
-                                </div>
-                                
-                                {/* Bottom Row: comments, time */}
-                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginTop: '4px' }}>
-                                    <span style={{ display: 'flex', alignItems: 'center', gap: 5, color: 'var(--text-muted)', fontSize: 13 }}>
-                                        <MessageCircle size={14} /> {c.comment_count}
-                                    </span>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: 5, color: 'var(--text-muted)', fontSize: 12 }}>
-                                        <Clock size={12} />
-                                        {c.reporter && !c.is_anonymous
-                                            ? `${c.reporter.name}${c.reporter.rollNumber ? ` (${c.reporter.rollNumber})` : ''} · `
-                                            : c.is_anonymous ? 'Anonymous · ' : ''}
-                                        {(() => {
-                                            const ms = Date.now() - new Date(c.created_at).getTime();
-                                            const d = Math.floor(ms / 86400000);
-                                            const h = Math.floor((ms % 86400000) / 3600000);
-                                            if (d > 0) return `${d}d ago`;
-                                            if (h > 0) return `${h}h ago`;
-                                            return `${Math.floor(ms / 60000)}m ago`;
-                                        })()}
+                            <a href={`/maintenance/complaints/${c.id}`} style={{ textDecoration: 'none', color: 'inherit', flex: 1, display: 'flex', flexDirection: 'column' }}>
+                                <div style={{ padding: '16px', flex: 1, display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                                    {/* Top Row: Emergency indicator + Status */}
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                        {c.priority === 'EMERGENCY' ? (
+                                            <span style={{
+                                                color: '#ef4444',
+                                                fontWeight: 700,
+                                                fontSize: 11,
+                                                textTransform: 'uppercase',
+                                                letterSpacing: 1,
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                gap: 4
+                                            }}>
+                                                <AlertTriangle size={14} fill="#ef4444" /> EMERGENCY
+                                            </span>
+                                        ) : <span />}
+                                        <span style={{
+                                            background: `${getStatusColor(c.status)}20`,
+                                            color: getStatusColor(c.status),
+                                            border: `1px solid ${getStatusColor(c.status)}50`,
+                                            borderRadius: 20, padding: '3px 10px', fontSize: 11, fontWeight: 600,
+                                        }}>
+                                            {STATUS_LABELS[c.status]}
+                                        </span>
+                                    </div>
+                                    
+                                    {/* Title */}
+                                    <h3 style={{ margin: '0', fontSize: 16, fontWeight: 700, color: 'var(--text-primary)', lineHeight: 1.4 }}>
+                                        {c.title}
+                                    </h3>
+                                    
+                                    {/* Location */}
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'var(--text-muted)', fontSize: 13 }}>
+                                        <MapPin size={13} />
+                                        <span>{ZONE_LABELS[c.zone]}{c.building ? ` · ${c.building}` : ''}</span>
+                                    </div>
+                                    
+                                    {/* Bottom Row: upvotes, comments, time */}
+                                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginTop: '4px' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                                            <span style={{ display: 'flex', alignItems: 'center', gap: 5, color: 'var(--text-muted)', fontSize: 13 }} title={`${c.upvote_count ?? 0} Upvotes`}>
+                                                <ThumbsUp size={14} /> {c.upvote_count ?? 0}
+                                            </span>
+                                            <span style={{ display: 'flex', alignItems: 'center', gap: 5, color: 'var(--text-muted)', fontSize: 13 }} title={`${c.comment_count} Comments`}>
+                                                <MessageCircle size={14} /> {c.comment_count}
+                                            </span>
+                                        </div>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: 5, color: 'var(--text-muted)', fontSize: 12 }}>
+                                            <Clock size={12} />
+                                            {c.reporter && !c.is_anonymous
+                                                ? `${c.reporter.name}${c.reporter.rollNumber ? ` (${c.reporter.rollNumber})` : ''} · `
+                                                : c.is_anonymous ? 'Anonymous · ' : ''}
+                                            {(() => {
+                                                const ms = Date.now() - new Date(c.created_at).getTime();
+                                                const d = Math.floor(ms / 86400000);
+                                                const h = Math.floor((ms % 86400000) / 3600000);
+                                                if (d > 0) return `${d}d ago`;
+                                                if (h > 0) return `${h}h ago`;
+                                                return `${Math.floor(ms / 60000)}m ago`;
+                                            })()}
+                                        </div>
+                                    </div>
+
+                                    {/* View Details link */}
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#06b6d4', fontSize: 13, fontWeight: 600, marginTop: 4 }}>
+                                        <Eye size={14} /> View Full Details →
                                     </div>
                                 </div>
-                            </div>
+                            </a>
 
                             {/* Action Area */}
                             <div style={{ padding: '16px', borderTop: '1px solid var(--border-color)', background: 'var(--bg-glass)' }}>
@@ -390,8 +469,7 @@ export default function MaintenanceDashboard() {
                             </div>
                         </div>
                     ))}
-                </div>
             </div>
-        );
-    }
+        </div>
+    );
 }

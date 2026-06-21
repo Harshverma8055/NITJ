@@ -45,7 +45,7 @@ export async function GET(req: NextRequest) {
         } else if (user.role === 'MAINTENANCE') {
             const { data: staff } = await supabase
                 .from('maintenance_staff')
-                .select('user_id, department_code, department')
+                .select('id, user_id, department_code, department')
                 .eq('user_id', user.id)
                 .single();
                 
@@ -55,7 +55,12 @@ export async function GET(req: NextRequest) {
         }
 
         return NextResponse.json({ 
-            user: { ...user, studentId: studentData?.id },
+            user: { 
+                ...user, 
+                studentId: studentData?.id,
+                maintenanceDept: staffData?.department_code,
+                maintenanceId: staffData?.id
+            },
             student: studentData ? { ...studentData, user } : null,
             staff: staffData ? { ...staffData, user } : null,
             complaints

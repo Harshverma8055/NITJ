@@ -19,6 +19,21 @@ const DEPARTMENTS = [
     { id: 'horticulture', name: 'Horticulture', head: 'Horticulture Supervisor', color: '#10b981', total: 0, active: 0, resolved: 0, sla: '120h', icon: Building2 },
 ];
 
+const DEPT_ID_TO_CODE: Record<string, string> = {
+    electrical: 'ELECTRICAL_MAINT',
+    civil: 'CIVIL_WORKS',
+    plumbing: 'PLUMBING_SANITATION',
+    network: 'NETWORK_IT',
+    hostel: 'HOSTEL_MAINT',
+    sports: 'SPORTS_FACILITY',
+    security: 'CAMPUS_SECURITY',
+    research: 'RESEARCH_INFRA',
+    transport: 'TRANSPORT_PARKING',
+    library: 'LIBRARY_TECH',
+    lab: 'LAB_MAINT',
+    horticulture: 'HORTICULTURE'
+};
+
 export default function DepartmentsPage() {
     const router = useRouter();
     const [view, setView] = useState<'grid' | 'table'>('grid');
@@ -157,7 +172,10 @@ export default function DepartmentsPage() {
                                         <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)' }}>
                                             SLA: <span style={{ color: 'rgba(255,255,255,0.7)' }}>{dept.sla}</span>
                                         </div>
-                                        <button onClick={() => router.push('/admin/complaints')} style={{ background: 'none', border: 'none', color: dept.color, fontSize: 12, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 4, cursor: 'pointer' }}>
+                                        <button onClick={() => {
+                                            const code = DEPT_ID_TO_CODE[dept.id] || 'ALL';
+                                            router.push(`/admin/complaints?dept=${code}&filter=All Complaints`);
+                                        }} style={{ background: 'none', border: 'none', color: dept.color, fontSize: 12, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 4, cursor: 'pointer' }}>
                                             View <ChevronRight size={14} />
                                         </button>
                                     </div>
@@ -204,7 +222,10 @@ export default function DepartmentsPage() {
                                             </div>
                                         </td>
                                         <td data-label="ACTION" style={{ padding: '16px 24px' }}>
-                                            <button onClick={() => router.push('/admin/complaints')} style={{ background: 'none', border: 'none', color: '#6366f1', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
+                                            <button onClick={() => {
+                                                const code = DEPT_ID_TO_CODE[dept.id] || 'ALL';
+                                                router.push(`/admin/complaints?dept=${code}&filter=All Complaints`);
+                                            }} style={{ background: 'none', border: 'none', color: '#6366f1', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
                                                 View Details
                                             </button>
                                         </td>

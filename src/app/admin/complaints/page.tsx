@@ -1,17 +1,84 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { ShieldCheck, MapPin, Zap, AlertTriangle, MessageSquare, Plus } from 'lucide-react';
+import { useEffect, useState, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { ShieldCheck, MapPin, Zap, AlertTriangle, MessageSquare, Plus, ThumbsUp, Clock } from 'lucide-react';
+import { DEPARTMENTS } from '@/lib/department-router';
 
-export default function AdminComplaintsPage() {
+function ComplaintsContent() {
     const router = useRouter();
+    const searchParams = useSearchParams();
+    
+    // Read from searchParams immediately to set initial state correctly
+    const initialDept = searchParams.get('dept') || 'ALL';
+    const initialFilter = searchParams.get('filter') || 'Pending';
+
     const [complaints, setComplaints] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [filter, setFilter] = useState('Active / Working');
+    const [filter, setFilter] = useState(initialFilter);
+    const [selectedDept, setSelectedDept] = useState(initialDept);
+    const [counts, setCounts] = useState<Record<string, number>>({
+        'Pending': 0,
+        'Active': 0,
+        'Resolved': 0,
+        'Emergencies': 0,
+        'All Complaints': 0
+    });
+
+    // When searchParams change due to soft navigation, update state
+    useEffect(() => {
+        const dept = searchParams.get('dept');
+        const filt = searchParams.get('filter');
+        if (dept) setSelectedDept(dept);
+        if (filt) setFilter(filt);
+    }, [searchParams]);
+
+    const fetchCounts = (dept: string) => {
+        let deptParam = '';
+        if (dept !== 'ALL') {
+            deptParam = `&department=${encodeURIComponent(dept)}`;
+        }
+        Promise.all([
+            fetch(`/api/complaints?limit=1&status=PENDING_REVIEW${deptParam}`).then(res => res.json()),
+            fetch(`/api/complaints?limit=1&status=APPROVED,ASSIGNED,IN_PROGRESS${deptParam}`).then(res => res.json()),
+            fetch(`/api/complaints?limit=1&status=RESOLVED${deptParam}`).then(res => res.json()),
+            fetch(`/api/complaints?limit=1&status=APPROVED,ASSIGNED,IN_PROGRESS,RESOLVED${deptParam}`).then(res => res.json()),
+            fetch(`/api/complaints?limit=1&is_emergency=true&status=APPROVED,ASSIGNED,IN_PROGRESS,PENDING_REVIEW${deptParam}`).then(res => res.json()),
+        ]).then(([pendingData, activeData, resolvedData, allData, emergencyData]) => {
+            setCounts({
+                'Pending': pendingData.total || 0,
+                'Active': activeData.total || 0,
+                'Resolved': resolvedData.total || 0,
+                'All Complaints': allData.total || 0,
+                'Emergencies': emergencyData.total || 0
+            });
+        }).catch(err => console.error("Error fetching status counts", err));
+    };
 
     useEffect(() => {
-        fetch('/api/complaints')
+        setLoading(true);
+        let statusParam = '';
+        let emergencyParam = '';
+        if (filter === 'Pending') {
+            statusParam = 'status=PENDING_REVIEW';
+        } else if (filter === 'Active') {
+            statusParam = 'status=APPROVED,ASSIGNED,IN_PROGRESS';
+        } else if (filter === 'Resolved') {
+            statusParam = 'status=RESOLVED';
+        } else if (filter === 'All Complaints') {
+            statusParam = 'status=APPROVED,ASSIGNED,IN_PROGRESS,RESOLVED';
+        } else if (filter === 'Emergencies') {
+            emergencyParam = 'is_emergency=true';
+            statusParam = 'status=PENDING_REVIEW,APPROVED,ASSIGNED,IN_PROGRESS';
+        }
+        
+        let deptParam = '';
+        if (selectedDept !== 'ALL') {
+            deptParam = `&department=${encodeURIComponent(selectedDept)}`;
+        }
+        
+        const url = `/api/complaints?limit=50&sort=latest${statusParam ? `&${statusParam}` : ''}${emergencyParam ? `&${emergencyParam}` : ''}${deptParam}`;
+        fetch(url)
             .then(res => res.json())
             .then(data => {
                 const valid = (data.complaints || []).filter((c: any) => c.category !== 'ANNOUNCEMENT');
@@ -19,16 +86,23 @@ export default function AdminComplaintsPage() {
                 setLoading(false);
             })
             .catch(() => setLoading(false));
-    }, []);
+
+        fetchCounts(selectedDept);
+    }, [filter, selectedDept]);
 
     if (loading) return <div style={{ display: 'flex', justifyContent: 'center', padding: 100 }}><div className="spinner"></div></div>;
 
     const filtered = complaints.filter((c: any) => {
-        if (filter === 'All Complaints') return true;
-        if (filter === 'Pending Review') return c.status === 'PENDING_REVIEW';
-        if (filter === 'Active / Working') return c.status === 'IN_PROGRESS' || c.status === 'ASSIGNED';
-        if (filter === 'Resolved / Completed') return c.status === 'RESOLVED';
-        if (filter === 'Emergencies') return c.is_emergency;
+        // Status filter
+        if (filter === 'Pending' && c.status !== 'PENDING_REVIEW') return false;
+        if (filter === 'Active' && c.status !== 'IN_PROGRESS' && c.status !== 'ASSIGNED' && c.status !== 'APPROVED') return false;
+        if (filter === 'Resolved' && c.status !== 'RESOLVED') return false;
+        if (filter === 'Emergencies' && (!c.is_emergency || c.status === 'RESOLVED')) return false;
+        if (filter === 'All Complaints' && c.status === 'PENDING_REVIEW') return false;
+
+        // Department filter
+        if (selectedDept !== 'ALL' && c.assigned_department_code !== selectedDept) return false;
+
         return true;
     });
 
@@ -44,25 +118,73 @@ export default function AdminComplaintsPage() {
                 </p>
             </div>
 
-            {/* Filters */}
-            <div style={{ display: 'flex', gap: 8, marginBottom: 32, overflowX: 'auto', paddingBottom: 8 }}>
-                {['Pending Review', 'Active / Working', 'Resolved / Completed', '🚨 Emergencies', 'All Complaints'].map(f => {
-                    const isActive = filter === f.replace('🚨 ', '');
-                    return (
-                        <button 
-                            key={f}
-                            onClick={() => setFilter(f.replace('🚨 ', ''))}
-                            style={{ 
-                                background: isActive ? '#f59e0b' : 'transparent', 
-                                color: isActive ? 'black' : 'rgba(255,255,255,0.5)', 
-                                border: 'none', padding: '8px 20px', borderRadius: 20, 
-                                fontSize: 13, fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap'
-                            }}
-                        >
-                            {f}
-                        </button>
-                    );
-                })}
+            {/* Filters Row */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 16, marginBottom: 32, flexWrap: 'wrap' }}>
+                {/* Status Tabs */}
+                <div style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 8 }}>
+                    {[
+                        { id: 'Pending', label: 'Pending' },
+                        { id: 'Emergencies', label: '🚨 Emergencies' },
+                        { id: 'Active', label: 'Active' },
+                        { id: 'Resolved', label: 'Resolved' },
+                        { id: 'All Complaints', label: 'All Complaints' }
+                    ].map(tab => {
+                        const isActive = filter === tab.id;
+                        const count = counts[tab.id] || 0;
+                        return (
+                            <button 
+                                key={tab.id}
+                                onClick={() => {
+                                    setFilter(tab.id);
+                                    if (tab.id === 'Pending') {
+                                        setSelectedDept('ALL');
+                                    }
+                                }}
+                                style={{ 
+                                    background: isActive ? '#f59e0b' : 'transparent', 
+                                    color: isActive ? 'black' : 'rgba(255,255,255,0.5)', 
+                                    border: 'none', padding: '8px 20px', borderRadius: 20, 
+                                    fontSize: 13, fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap',
+                                    display: 'flex', alignItems: 'center', gap: 8
+                                }}
+                            >
+                                <span>{tab.label}</span>
+                                <span style={{ 
+                                    background: isActive ? 'rgba(0,0,0,0.15)' : 'rgba(255,255,255,0.1)', 
+                                    color: isActive ? 'black' : 'rgba(255,255,255,0.7)', 
+                                    padding: '2px 8px', borderRadius: 10, fontSize: 11, fontWeight: 700 
+                                }}>
+                                    {count}
+                                </span>
+                            </button>
+                        );
+                    })}
+                </div>
+
+                {/* Department Dropdown Selector */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.5)', fontWeight: 600 }}>Department:</span>
+                    <select
+                        value={selectedDept}
+                        onChange={e => setSelectedDept(e.target.value)}
+                        style={{
+                            background: '#13151A',
+                            color: 'white',
+                            border: '1px solid rgba(255,255,255,0.1)',
+                            padding: '8px 16px',
+                            borderRadius: 20,
+                            fontSize: 13,
+                            fontWeight: 600,
+                            cursor: 'pointer',
+                            outline: 'none'
+                        }}
+                    >
+                        <option value="ALL">All Departments</option>
+                        {Object.entries(DEPARTMENTS).map(([code, dept]) => (
+                            <option key={code} value={code}>{dept.shortName}</option>
+                        ))}
+                    </select>
+                </div>
             </div>
 
             {/* List */}
@@ -76,30 +198,27 @@ export default function AdminComplaintsPage() {
                     const isResolved = c.status === 'RESOLVED';
                     const isWorking = c.status === 'IN_PROGRESS';
                     const isPending = c.status === 'PENDING_REVIEW';
-                    
-                    const score = c.priority_score ? Number(c.priority_score).toFixed(2) : (c.upvote_count > 0 ? (14.44 + c.upvote_count).toFixed(2) : '15.97');
-
                     return (
-                        <div key={c.id} style={{ 
-                            background: '#13151A', 
-                            border: `1px solid ${isEmergency ? '#ef4444' : 'rgba(255,255,255,0.05)'}`, 
-                            borderRadius: 16, overflow: 'hidden'
-                        }}>
-                            {/* Top Bar with ID */}
-                            <div style={{ padding: '12px 24px', borderBottom: `1px solid ${isEmergency ? 'rgba(239,68,68,0.2)' : 'rgba(255,255,255,0.05)'}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 12, color: 'rgba(255,255,255,0.4)' }}>
-                                <div>ID: {c.id.split('-')[0].toUpperCase()} - Score: {score}</div>
-                                <div style={{ display: 'flex', gap: 12 }}>
-                                    <button onClick={() => router.push(`/admin/complaints/${c.id}`)} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.6)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, fontSize: 12 }}>
-                                        <div style={{ width: 14, height: 14, borderRadius: '50%', border: '1px solid rgba(255,255,255,0.4)' }}></div> View
-                                    </button>
-                                    {!isResolved && (
-                                        <button onClick={() => router.push(`/admin/complaints/${c.id}`)} style={{ background: '#8b5cf6', color: 'white', border: 'none', padding: '4px 12px', borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}>
-                                            <span style={{ fontSize: 14 }}>👤</span> Assign Staff
-                                        </button>
-                                    )}
-                                </div>
-                            </div>
-
+                        <div 
+                            key={c.id} 
+                            onClick={() => router.push(`/admin/complaints/${c.id}`)}
+                            onMouseEnter={e => {
+                                e.currentTarget.style.transform = 'translateY(-4px)';
+                                e.currentTarget.style.boxShadow = isEmergency ? '0 12px 30px rgba(239,68,68,0.15)' : '0 12px 30px rgba(0,0,0,0.4)';
+                                e.currentTarget.style.borderColor = isEmergency ? '#ef4444' : 'rgba(255,255,255,0.15)';
+                            }}
+                            onMouseLeave={e => {
+                                e.currentTarget.style.transform = 'translateY(0)';
+                                e.currentTarget.style.boxShadow = 'none';
+                                e.currentTarget.style.borderColor = isEmergency ? '#ef4444' : 'rgba(255,255,255,0.05)';
+                            }}
+                            style={{ 
+                                background: '#13151A', 
+                                border: `1px solid ${isEmergency ? '#ef4444' : 'rgba(255,255,255,0.05)'}`, 
+                                borderRadius: 16, overflow: 'hidden', cursor: 'pointer',
+                                transition: 'all 0.25s ease-in-out'
+                            }}
+                        >
                             {/* Emergency Red Banner */}
                             {isEmergency && (
                                 <div style={{ background: '#ef4444', color: 'white', padding: '8px 24px', fontSize: 12, fontWeight: 700, letterSpacing: 1, display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -110,35 +229,46 @@ export default function AdminComplaintsPage() {
                             {/* Main Content */}
                             <div style={{ padding: '20px 24px' }}>
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
-                                    <div style={{ 
-                                        color: isEmergency ? '#ef4444' : isResolved ? '#10b981' : '#f59e0b', 
-                                        display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, fontWeight: 700, letterSpacing: 0.5 
-                                    }}>
-                                        {isEmergency ? <AlertTriangle size={14} /> : <Zap size={14} />} 
-                                        {isEmergency ? 'EMERGENCY' : c.priority === 'LOW' ? 'LOW PRIORITY' : 'MODERATE'}
+                                    <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+                                        <div style={{
+                                            background: isResolved ? 'rgba(16,185,129,0.1)' : isWorking ? 'rgba(6,182,212,0.1)' : isPending ? 'rgba(245,158,11,0.1)' : 'rgba(59,130,246,0.1)',
+                                            color: isResolved ? '#10b981' : isWorking ? '#06b6d4' : isPending ? '#f59e0b' : '#3b82f6',
+                                            padding: '6px 14px', borderRadius: 12, fontSize: 11, fontWeight: 700, letterSpacing: 0.5
+                                        }}>
+                                            {isResolved ? 'RESOLVED' : isWorking ? 'IN PROGRESS' : isPending ? 'PENDING REVIEW' : 'APPROVED'}
+                                        </div>
+                                        <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)', fontWeight: 600, letterSpacing: 0.5 }}>
+                                            ID: {c.id.split('-')[0].toUpperCase()}
+                                        </div>
                                     </div>
-                                    <div style={{
-                                        background: isResolved ? 'rgba(16,185,129,0.1)' : isWorking ? 'rgba(6,182,212,0.1)' : isPending ? 'rgba(245,158,11,0.1)' : 'rgba(59,130,246,0.1)',
-                                        color: isResolved ? '#10b981' : isWorking ? '#06b6d4' : isPending ? '#f59e0b' : '#3b82f6',
-                                        padding: '4px 12px', borderRadius: 12, fontSize: 11, fontWeight: 700
-                                    }}>
-                                        {isResolved ? 'Resolved' : isWorking ? 'Work In Progress' : isPending ? 'Pending Review' : 'Approved'}
+                                    <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: 12, display: 'flex', alignItems: 'center', gap: 6 }}>
+                                        <Clock size={14} />
+                                        <span>{new Date(c.created_at).toLocaleDateString()}</span>
+                                        <span>•</span>
+                                        <span>{new Date(c.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                                     </div>
                                 </div>
 
-                                <h3 style={{ margin: '0 0 12px 0', fontSize: 18, fontWeight: 700 }}>{c.title}</h3>
+                                <h3 style={{ margin: '0 0 12px 0', fontSize: 18, fontWeight: 700, color: 'white' }}>{c.title}</h3>
                                 
-                                <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'rgba(255,255,255,0.4)', fontSize: 13, marginBottom: 16 }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'rgba(255,255,255,0.5)', fontSize: 13, marginBottom: 20 }}>
                                     <MapPin size={14} /> {c.zone.replace('_', ' ')}
                                 </div>
 
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'rgba(255,255,255,0.4)', fontSize: 13 }}>
-                                        <MessageSquare size={14} /> {c.comment_count || 0}
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: 16 }}>
+                                    <div style={{ display: 'flex', gap: 12 }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'rgba(255,255,255,0.7)', fontSize: 13, background: 'rgba(255,255,255,0.05)', padding: '6px 12px', borderRadius: 20, fontWeight: 500 }}>
+                                            <ThumbsUp size={14} color="#f59e0b" /> <span>{c.upvote_count || 0} Upvotes</span>
+                                        </div>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'rgba(255,255,255,0.7)', fontSize: 13, background: 'rgba(255,255,255,0.05)', padding: '6px 12px', borderRadius: 20, fontWeight: 500 }}>
+                                            <MessageSquare size={14} color="#3b82f6" /> <span>{c.comment_count || 0} Comments</span>
+                                        </div>
                                     </div>
-                                    <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: 12, display: 'flex', alignItems: 'center', gap: 6 }}>
-                                        <div style={{ width: 14, height: 14, borderRadius: '50%', border: '1px solid rgba(255,255,255,0.4)' }}></div>
-                                        {c.reporter?.name || 'Anonymous'} ({c.reporter?.rollNumber || 'N/A'}) • {new Date(c.created_at).toLocaleDateString()}
+                                    <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: 13, display: 'flex', alignItems: 'center', gap: 8 }}>
+                                        <div style={{ width: 22, height: 22, borderRadius: '50%', background: '#8b5cf6', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 'bold' }}>
+                                            {(c.reporter?.name || 'A')[0].toUpperCase()}
+                                        </div>
+                                        <span>{c.reporter?.name || 'Anonymous'} ({c.reporter?.rollNumber || 'N/A'})</span>
                                     </div>
                                 </div>
                             </div>
@@ -149,3 +279,12 @@ export default function AdminComplaintsPage() {
         </div>
     );
 }
+
+export default function AdminComplaintsPage() {
+    return (
+        <Suspense fallback={<div style={{ display: 'flex', justifyContent: 'center', padding: 100 }}><div className="spinner"></div></div>}>
+            <ComplaintsContent />
+        </Suspense>
+    );
+}
+

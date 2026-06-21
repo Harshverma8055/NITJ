@@ -94,14 +94,20 @@ export default function AdminComplaintDetail({ params }: { params: Promise<{ id:
                     <div>
                         <h1 style={{ fontSize: 24, fontWeight: 700, margin: '0 0 8px 0', lineHeight: 1.3 }}>{c.title}</h1>
                         <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: 13, marginBottom: 16 }}>
-                            Category: {c.category} / Lighting
+                            Category: {c.category}
                         </div>
                         <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
-                            <Badge color="#10b981" text="Low Priority" variant="outline" />
-                            <Badge color="#10b981" text="Resolved" variant="filled" />
-                            <div style={{ border: '1px solid rgba(245,158,11,0.5)', color: '#fbbf24', padding: '2px 10px', borderRadius: 12, display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, fontWeight: 600 }}>
-                                <Clock size={12} /> SLA: 8d 11h
-                            </div>
+                            {c.is_emergency && <Badge color="#ef4444" text="Emergency" variant="outline" />}
+                            <Badge 
+                                color={c.status === 'RESOLVED' ? '#10b981' : c.status === 'IN_PROGRESS' || c.status === 'ASSIGNED' ? '#06b6d4' : c.status === 'PENDING_REVIEW' ? '#f59e0b' : '#3b82f6'} 
+                                text={c.status === 'RESOLVED' ? 'Resolved' : c.status === 'IN_PROGRESS' ? 'Work In Progress' : c.status === 'ASSIGNED' ? 'Assigned' : c.status === 'PENDING_REVIEW' ? 'Pending Review' : 'Approved'} 
+                                variant="filled" 
+                            />
+                            {c.sla_deadline && (
+                                <div style={{ border: '1px solid rgba(245,158,11,0.5)', color: '#fbbf24', padding: '2px 10px', borderRadius: 12, display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, fontWeight: 600 }}>
+                                    <Clock size={12} /> SLA Target: {new Date(c.sla_deadline).toLocaleString()}
+                                </div>
+                            )}
                             <div style={{ color: 'rgba(255,255,255,0.4)', display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, marginLeft: 8 }}>
                                 <MapPin size={14} /> {c.zone.replace('_', ' ')}
                             </div>
@@ -110,14 +116,11 @@ export default function AdminComplaintDetail({ params }: { params: Promise<{ id:
                 </div>
 
                 {/* Metrics Grid */}
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, marginBottom: 16 }}>
-                    <MetricBox title="SEVERITY" value={c.severity} />
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, marginBottom: 32 }}>
+                    <MetricBox title="EMERGENCY" value={c.is_emergency ? 'Yes' : 'No'} />
                     <MetricBox title="UPVOTES" value={c.upvote_count || 0} />
                     <MetricBox title="SUBMITTED" value={new Date(c.created_at).toLocaleDateString()} />
                     <MetricBox title="ANONYMOUS" value={c.is_anonymous ? 'Yes' : 'No'} />
-                </div>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, marginBottom: 32 }}>
-                    <MetricBox title="EMERGENCY" value={c.is_emergency ? 'Yes' : 'No'} />
                 </div>
 
                 {/* Exact Issue Location (Map) */}
@@ -164,6 +167,48 @@ export default function AdminComplaintDetail({ params }: { params: Promise<{ id:
                         <div style={{ fontSize: 15, fontWeight: 500, color: 'rgba(255,255,255,0.7)' }}>
                             Not assigned to any staff yet
                         </div>
+                    </div>
+                )}
+
+                {/* Evidence & Resolution Media */}
+                {c.complaint_media && c.complaint_media.length > 0 && (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 20, marginBottom: 24 }}>
+                        {c.complaint_media.some((m: any) => m.is_before) && (
+                            <div>
+                                <h3 style={{ marginTop: 0, fontSize: 15, color: 'rgba(255,255,255,0.7)', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 6 }}>
+                                    <ImageIcon size={16} /> Problem Evidence (Before)
+                                </h3>
+                                <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+                                    {c.complaint_media.filter((m: any) => m.is_before).map((media: any) => (
+                                        media.media_type === 'IMAGE' ? (
+                                            <a key={media.id} href={media.public_url} target="_blank" rel="noopener noreferrer">
+                                                <img src={media.public_url} alt="Evidence" style={{ height: 160, borderRadius: 8, border: '1px solid rgba(255,255,255,0.1)' }} />
+                                            </a>
+                                        ) : (
+                                            <video key={media.id} src={media.public_url} controls style={{ height: 160, borderRadius: 8, border: '1px solid rgba(255,255,255,0.1)' }} />
+                                        )
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+                        {c.complaint_media.some((m: any) => m.is_after) && (
+                            <div>
+                                <h3 style={{ marginTop: 0, fontSize: 15, color: '#10b981', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 6 }}>
+                                    <CheckCircle size={16} color="#10b981" /> Work Resolution Evidence (After)
+                                </h3>
+                                <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+                                    {c.complaint_media.filter((m: any) => m.is_after).map((media: any) => (
+                                        media.media_type === 'IMAGE' ? (
+                                            <a key={media.id} href={media.public_url} target="_blank" rel="noopener noreferrer">
+                                                <img src={media.public_url} alt="Resolution" style={{ height: 160, borderRadius: 8, border: '1px solid rgba(16,185,129,0.2)' }} />
+                                            </a>
+                                        ) : (
+                                            <video key={media.id} src={media.public_url} controls style={{ height: 160, borderRadius: 8, border: '1px solid rgba(16,185,129,0.2)' }} />
+                                        )
+                                    ))}
+                                </div>
+                            </div>
+                        )}
                     </div>
                 )}
 

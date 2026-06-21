@@ -2,33 +2,112 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Plus, Clock, CheckCircle, AlertTriangle, Filter, Search, MapPin } from 'lucide-react';
+import { Plus, Clock, CheckCircle, AlertTriangle, Filter, Search, MapPin, User, ThumbsUp } from 'lucide-react';
 
 export default function ComplaintsPage() {
     const router = useRouter();
     const [complaints, setComplaints] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
-    const [statusFilter, setStatusFilter] = useState<string>('ALL');
+    const [statusFilter, setStatusFilter] = useState<string>('ALL_ACTIVE');
+    const [votingIds, setVotingIds] = useState<Record<string, boolean>>({});
+    const [sortBy, setSortBy] = useState<string>('latest');
 
-    useEffect(() => {
-        fetch('/api/auth/me')
+    const fetchComplaints = (status?: string, sort: string = 'latest') => {
+        setLoading(true);
+        const params = new URLSearchParams({ limit: '50', sort: sort });
+        if (status === 'MY_COMPLAINTS') {
+            params.set('my_only', 'true');
+        } else if (status && status !== 'ALL_ACTIVE') {
+            params.set('status', status);
+        }
+        fetch(`/api/complaints?${params.toString()}`)
             .then(res => res.json())
             .then(data => {
-                if (data.complaints) setComplaints(data.complaints);
+                let list = data.complaints || [];
+                // For ALL_ACTIVE, exclude resolved
+                if (status === 'ALL_ACTIVE') {
+                    list = list.filter((c: any) => c.status !== 'RESOLVED');
+                }
+                setComplaints(list);
                 setLoading(false);
             })
             .catch(() => setLoading(false));
-    }, []);
+    };
 
-    if (loading) return <div style={{ display: 'flex', justifyContent: 'center', marginTop: 100 }}><div className="spinner"></div></div>;
+    const handleVote = async (e: React.MouseEvent, id: string) => {
+        e.stopPropagation();
+        if (votingIds[id]) return;
+        setVotingIds(prev => ({ ...prev, [id]: true }));
+        try {
+            const res = await fetch(`/api/complaints/${id}/vote`, { method: 'POST' });
+            const d = await res.json();
+            if (res.ok) {
+                setComplaints(prev => prev.map(c => {
+                    if (c.id === id) {
+                        return {
+                            ...c,
+                            has_voted: d.voted,
+                            upvote_count: d.upvote_count
+                        };
+                    }
+                    return c;
+                }));
+            }
+        } catch (err) {
+            console.error(err);
+        } finally {
+            setVotingIds(prev => ({ ...prev, [id]: false }));
+        }
+    };
+
+    useEffect(() => {
+        fetchComplaints(statusFilter, sortBy);
+    }, [statusFilter, sortBy]);
+
+    const getStatusColor = (status: string) => {
+        switch (status) {
+            case 'RESOLVED': return '#10b981';
+            case 'IN_PROGRESS': return '#fbbf24';
+            case 'ASSIGNED': return '#38bdf8';
+            case 'APPROVED': return '#818cf8';
+            default: return '#ef4444';
+        }
+    };
+
+    const getStatusBg = (status: string) => {
+        switch (status) {
+            case 'RESOLVED': return 'rgba(16,185,129,0.1)';
+            case 'IN_PROGRESS': return 'rgba(245,158,11,0.1)';
+            case 'ASSIGNED': return 'rgba(56,189,248,0.1)';
+            case 'APPROVED': return 'rgba(129,140,248,0.1)';
+            default: return 'rgba(239,68,68,0.1)';
+        }
+    };
+
+    const getStatusIcon = (status: string) => {
+        switch (status) {
+            case 'RESOLVED': return <CheckCircle size={24} />;
+            case 'IN_PROGRESS': return <Clock size={24} />;
+            default: return <AlertTriangle size={24} />;
+        }
+    };
+
+    const FILTERS = [
+        { key: 'ALL_ACTIVE', label: 'All Active' },
+        { key: 'MY_COMPLAINTS', label: 'Your Complaints' },
+        { key: 'APPROVED', label: 'Approved' },
+        { key: 'ASSIGNED', label: 'Assigned' },
+        { key: 'IN_PROGRESS', label: 'In Progress' },
+        { key: 'RESOLVED', label: 'Resolved' },
+    ];
 
     return (
         <div style={{ maxWidth: 1000, margin: '0 auto', color: 'white', paddingBottom: 60 }}>
             {/* Header */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 32 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 32, flexWrap: 'wrap', gap: 16 }}>
                 <div>
-                    <h1 style={{ fontSize: 28, margin: '0 0 8px 0', fontWeight: 700 }}>Your Campus Issues</h1>
-                    <p style={{ color: 'rgba(255,255,255,0.5)', margin: 0 }}>Track the status of your reported infrastructure problems.</p>
+                    <h1 style={{ fontSize: 28, margin: '0 0 8px 0', fontWeight: 700 }}>Campus Issues</h1>
+                    <p style={{ color: 'rgba(255,255,255,0.5)', margin: 0 }}>All active infrastructure problems reported across campus.</p>
                 </div>
                 <button 
                     onClick={() => router.push('/student/complaints/new')}
@@ -58,79 +137,168 @@ export default function ComplaintsPage() {
 
             {/* Status Filters */}
             <div style={{ display: 'flex', gap: 12, marginBottom: 24, overflowX: 'auto', paddingBottom: 8 }}>
-                {['ALL', 'PENDING_REVIEW', 'IN_PROGRESS', 'RESOLVED'].map(status => (
+                {FILTERS.map(f => (
                     <button 
-                        key={status}
-                        onClick={() => setStatusFilter(status)}
+                        key={f.key}
+                        onClick={() => setStatusFilter(f.key)}
                         style={{
-                            background: statusFilter === status ? '#6366f1' : 'rgba(255,255,255,0.05)',
-                            color: statusFilter === status ? 'white' : 'rgba(255,255,255,0.6)',
+                            background: statusFilter === f.key ? '#6366f1' : 'rgba(255,255,255,0.05)',
+                            color: statusFilter === f.key ? 'white' : 'rgba(255,255,255,0.6)',
                             border: '1px solid',
-                            borderColor: statusFilter === status ? '#6366f1' : 'rgba(255,255,255,0.1)',
+                            borderColor: statusFilter === f.key ? '#6366f1' : 'rgba(255,255,255,0.1)',
                             padding: '8px 16px', borderRadius: 20, fontSize: 13, fontWeight: 600,
                             cursor: 'pointer', transition: 'all 0.2s', whiteSpace: 'nowrap'
                         }}
                     >
-                        {status === 'ALL' ? 'All Complaints' : status.replace('_', ' ')}
+                        {f.label}
                     </button>
                 ))}
             </div>
 
-            {/* List */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-                {complaints.filter(c => statusFilter === 'ALL' || c.status === statusFilter).length === 0 ? (
-                    <div style={{ background: 'rgba(255,255,255,0.02)', padding: 40, borderRadius: 16, textAlign: 'center', color: 'rgba(255,255,255,0.4)', border: '1px dashed rgba(255,255,255,0.1)' }}>
-                        No complaints found for this status.
-                    </div>
-                ) : (
-                    complaints.filter(c => statusFilter === 'ALL' || c.status === statusFilter).map(c => (
-                        <div 
-                            key={c.id} 
-                            className="complaint-card"
-                            onClick={() => router.push(`/student/complaints/${c.id}`)}
-                            style={{ 
-                                background: 'rgba(255,255,255,0.02)', padding: '24px', 
-                                borderRadius: 16, cursor: 'pointer', border: '1px solid rgba(255,255,255,0.05)',
-                                transition: 'all 0.2s', display: 'flex', alignItems: 'center', justifyContent: 'space-between'
-                            }}
-                            onMouseEnter={e => {
-                                e.currentTarget.style.background = 'rgba(255,255,255,0.04)';
-                                e.currentTarget.style.transform = 'translateY(-2px)';
-                            }}
-                            onMouseLeave={e => {
-                                e.currentTarget.style.background = 'rgba(255,255,255,0.02)';
-                                e.currentTarget.style.transform = 'translateY(0)';
+            {/* Complaints Count & Sort */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, flexWrap: 'wrap', gap: 12 }}>
+                <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.4)' }}>
+                    Showing <strong style={{ color: 'rgba(255,255,255,0.7)' }}>{complaints.length}</strong> issue{complaints.length !== 1 ? 's' : ''}
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13 }}>
+                    <span style={{ color: 'rgba(255,255,255,0.4)' }}>Sort by:</span>
+                    <div style={{ display: 'flex', gap: 6 }}>
+                        <button
+                            onClick={() => setSortBy('latest')}
+                            style={{
+                                background: sortBy === 'latest' ? 'rgba(99, 102, 241, 0.2)' : 'rgba(255, 255, 255, 0.05)',
+                                color: sortBy === 'latest' ? '#a5b4fc' : 'rgba(255, 255, 255, 0.6)',
+                                border: sortBy === 'latest' ? '1px solid #6366f1' : '1px solid rgba(255, 255, 255, 0.1)',
+                                padding: '6px 12px',
+                                borderRadius: 8,
+                                cursor: 'pointer',
+                                fontSize: 12,
+                                fontWeight: 600,
+                                transition: 'all 0.2s',
                             }}
                         >
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
-                                <div style={{ 
-                                    width: 48, height: 48, borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                    background: c.status === 'RESOLVED' ? 'rgba(16,185,129,0.1)' : c.status === 'IN_PROGRESS' ? 'rgba(245,158,11,0.1)' : 'rgba(239,68,68,0.1)',
-                                    color: c.status === 'RESOLVED' ? '#10b981' : c.status === 'IN_PROGRESS' ? '#fbbf24' : '#ef4444'
-                                }}>
-                                    {c.status === 'RESOLVED' ? <CheckCircle size={24} /> : c.status === 'IN_PROGRESS' ? <Clock size={24} /> : <AlertTriangle size={24} />}
+                            Latest
+                        </button>
+                        <button
+                            onClick={() => setSortBy('upvotes')}
+                            style={{
+                                background: sortBy === 'upvotes' ? 'rgba(99, 102, 241, 0.2)' : 'rgba(255, 255, 255, 0.05)',
+                                color: sortBy === 'upvotes' ? '#a5b4fc' : 'rgba(255, 255, 255, 0.6)',
+                                border: sortBy === 'upvotes' ? '1px solid #6366f1' : '1px solid rgba(255, 255, 255, 0.1)',
+                                padding: '6px 12px',
+                                borderRadius: 8,
+                                cursor: 'pointer',
+                                fontSize: 12,
+                                fontWeight: 600,
+                                transition: 'all 0.2s',
+                            }}
+                        >
+                            Trending
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            {/* List */}
+            {loading ? (
+                <div style={{ display: 'flex', justifyContent: 'center', marginTop: 60 }}><div className="spinner"></div></div>
+            ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                    {complaints.length === 0 ? (
+                        <div style={{ background: 'rgba(255,255,255,0.02)', padding: 40, borderRadius: 16, textAlign: 'center', color: 'rgba(255,255,255,0.4)', border: '1px dashed rgba(255,255,255,0.1)' }}>
+                            No issues found for this filter.
+                        </div>
+                    ) : (
+                        complaints.map(c => (
+                            <div 
+                                key={c.id} 
+                                className="complaint-card"
+                                onClick={() => router.push(`/student/complaints/${c.id}`)}
+                                style={{ 
+                                    background: 'rgba(255,255,255,0.02)', padding: '24px', 
+                                    borderRadius: 16, cursor: 'pointer', border: '1px solid rgba(255,255,255,0.05)',
+                                    transition: 'all 0.2s', display: 'flex', alignItems: 'center', justifyContent: 'space-between'
+                                }}
+                                onMouseEnter={e => {
+                                    e.currentTarget.style.background = 'rgba(255,255,255,0.04)';
+                                    e.currentTarget.style.transform = 'translateY(-2px)';
+                                }}
+                                onMouseLeave={e => {
+                                    e.currentTarget.style.background = 'rgba(255,255,255,0.02)';
+                                    e.currentTarget.style.transform = 'translateY(0)';
+                                }}
+                            >
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
+                                    <div style={{ 
+                                        width: 48, height: 48, borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                        background: getStatusBg(c.status),
+                                        color: getStatusColor(c.status)
+                                    }}>
+                                        {getStatusIcon(c.status)}
+                                    </div>
+                                    <div>
+                                        <h3 style={{ margin: '0 0 6px 0', fontSize: 18, fontWeight: 600, color: 'white' }}>{c.title}</h3>
+                                        <div className="complaint-card-meta" style={{ display: 'flex', alignItems: 'center', gap: 16, color: 'rgba(255,255,255,0.5)', fontSize: 13, flexWrap: 'wrap' }}>
+                                            <span style={{ color: '#6366f1', fontWeight: 500 }}>{c.category?.replace('_', ' ')}</span>
+                                            <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><MapPin size={12} /> {c.zone?.replace('_', ' ')}</span>
+                                            <span>{new Date(c.created_at).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })}</span>
+                                            {c.is_emergency && (
+                                                <span style={{ color: '#ef4444', fontWeight: 600, fontSize: 11, background: 'rgba(239,68,68,0.1)', padding: '2px 8px', borderRadius: 8 }}>EMERGENCY</span>
+                                            )}
+                                        </div>
+                                    </div>
                                 </div>
-                                <div>
-                                    <h3 style={{ margin: '0 0 6px 0', fontSize: 18, fontWeight: 600, color: 'white' }}>{c.title}</h3>
-                                    <div className="complaint-card-meta" style={{ display: 'flex', alignItems: 'center', gap: 16, color: 'rgba(255,255,255,0.5)', fontSize: 13 }}>
-                                        <span style={{ color: '#6366f1', fontWeight: 500 }}>{c.category.replace('_', ' ')}</span>
-                                        <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><MapPin size={12} /> {c.zone.replace('_', ' ')}</span>
-                                        <span>{new Date(c.created_at).toLocaleDateString()}</span>
+
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                                    <button
+                                        onClick={(e) => handleVote(e, c.id)}
+                                        disabled={votingIds[c.id]}
+                                        style={{
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            gap: 6,
+                                            padding: '6px 12px',
+                                            background: c.has_voted ? 'rgba(99, 102, 241, 0.2)' : 'rgba(255, 255, 255, 0.05)',
+                                            border: c.has_voted ? '1px solid #6366f1' : '1px solid rgba(255, 255, 255, 0.1)',
+                                            borderRadius: 20,
+                                            cursor: votingIds[c.id] ? 'not-allowed' : 'pointer',
+                                            color: c.has_voted ? '#a5b4fc' : 'rgba(255, 255, 255, 0.7)',
+                                            fontSize: 13,
+                                            fontWeight: 600,
+                                            transition: 'all 0.2s',
+                                        }}
+                                        onMouseEnter={e => {
+                                            if (!c.has_voted) {
+                                                e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)';
+                                                e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.2)';
+                                            }
+                                        }}
+                                        onMouseLeave={e => {
+                                            if (!c.has_voted) {
+                                                e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)';
+                                                e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.1)';
+                                            }
+                                        }}
+                                    >
+                                        <ThumbsUp size={14} fill={c.has_voted ? '#6366f1' : 'none'} />
+                                        <span>{c.upvote_count ?? 0}</span>
+                                    </button>
+
+                                    <div style={{ 
+                                        fontSize: 12, padding: '6px 16px', borderRadius: 20, fontWeight: 600,
+                                        background: getStatusBg(c.status),
+                                        color: getStatusColor(c.status),
+                                        whiteSpace: 'nowrap'
+                                    }}>
+                                        {c.status?.replace(/_/g, ' ')}
                                     </div>
                                 </div>
                             </div>
-
-                            <div style={{ 
-                                fontSize: 12, padding: '6px 16px', borderRadius: 20, fontWeight: 600,
-                                background: c.status === 'RESOLVED' ? 'rgba(16,185,129,0.1)' : c.status === 'IN_PROGRESS' ? 'rgba(245,158,11,0.1)' : 'rgba(239,68,68,0.1)',
-                                color: c.status === 'RESOLVED' ? '#10b981' : c.status === 'IN_PROGRESS' ? '#fbbf24' : '#ef4444'
-                            }}>
-                                {c.status.replace('_', ' ')}
-                            </div>
-                        </div>
-                    ))
-                )}
-            </div>
+                        ))
+                    )}
+                </div>
+            )}
         </div>
     );
 }
+

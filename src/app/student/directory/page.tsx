@@ -14,11 +14,22 @@ export default function StudentDirectoryPage() {
     const [yearFilter, setYearFilter] = useState('All Years');
     const [viewMode, setViewMode] = useState<'students' | 'staff'>('students');
     const [visibleCount, setVisibleCount] = useState(24);
+    const [sortByPulse, setSortByPulse] = useState(false);
+    const [currentUserRollNumber, setCurrentUserRollNumber] = useState<string | null>(null);
 
     const DEPARTMENTS = ['All Depts', 'BT', 'ChE', 'CE', 'CSE', 'DSE', 'EE', 'ECE', 'IPE', 'IT', 'ICE', 'MnC', 'ME', 'TT'];
     const YEARS = ['All Years', 'Year 1', 'Year 2', 'Year 3', 'Year 4'];
 
     useEffect(() => {
+        fetch('/api/auth/me')
+            .then(res => res.json())
+            .then(data => {
+                if (data.student) {
+                    setCurrentUserRollNumber(data.student.roll_number);
+                }
+            })
+            .catch(() => {});
+
         fetch('/api/students').then(r => r.json()).then((studentData) => {
             if (studentData.students) setStudents(studentData.students);
             setLoading(false);
@@ -52,7 +63,7 @@ export default function StudentDirectoryPage() {
         return dept;
     };
 
-    // Client-side filtering
+    // Client-side filtering & sorting
     const filteredData = students.filter(s => {
         const mappedDept = getMappedDept(s.department);
         const searchLower = search.toLowerCase();
@@ -65,6 +76,13 @@ export default function StudentDirectoryPage() {
         const matchesDept = deptFilter === 'All Depts' || mappedDept === deptFilter;
         const matchesYear = yearFilter === 'All Years' || `Year ${s.year}` === yearFilter;
         return matchesSearch && matchesDept && matchesYear;
+    });
+
+    const sortedData = [...filteredData].sort((a, b) => {
+        if (sortByPulse) {
+            return (b.rating || 0) - (a.rating || 0);
+        }
+        return (a.roll_number || '').localeCompare(b.roll_number || '');
     });
 
     useEffect(() => {
@@ -108,8 +126,8 @@ export default function StudentDirectoryPage() {
             </div>
 
             {/* Filters */}
-                <div style={{ display: 'flex', gap: 24, marginBottom: 32, alignItems: 'center' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 12, flex: 1 }}>
+                <div className="directory-filters" style={{ marginBottom: 32 }}>
+                    <div className="directory-filter-section">
                         <MapPin size={18} color="rgba(255,255,255,0.4)" />
                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
                             {DEPARTMENTS.map(dept => (
@@ -131,7 +149,7 @@ export default function StudentDirectoryPage() {
                         </div>
                     </div>
 
-                    <div style={{ display: 'flex', gap: 8 }}>
+                    <div className="year-filter-section">
                         {YEARS.map(year => (
                             <button 
                                 key={year}
@@ -152,9 +170,33 @@ export default function StudentDirectoryPage() {
                 </div>
 
 
-            {/* Count */}
-            <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.5)', marginBottom: 24 }}>
-                Showing 1-{Math.min(filteredData.length, visibleCount)} of <strong>{filteredData.length}</strong> students
+            {/* Count & Sort */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24, flexWrap: 'wrap', gap: 12 }}>
+                <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.5)' }}>
+                    Showing 1-{Math.min(sortedData.length, visibleCount)} of <strong>{sortedData.length}</strong> students
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13 }}>
+                    <span style={{ color: 'rgba(255,255,255,0.4)' }}>Sort by:</span>
+                    <button
+                        onClick={() => setSortByPulse(!sortByPulse)}
+                        style={{
+                            background: sortByPulse ? 'rgba(99, 102, 241, 0.2)' : 'rgba(255, 255, 255, 0.05)',
+                            color: sortByPulse ? '#a5b4fc' : 'rgba(255, 255, 255, 0.6)',
+                            border: sortByPulse ? '1px solid #6366f1' : '1px solid rgba(255, 255, 255, 0.1)',
+                            padding: '6px 12px',
+                            borderRadius: 8,
+                            cursor: 'pointer',
+                            fontSize: 12,
+                            fontWeight: 600,
+                            transition: 'all 0.2s',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 6
+                        }}
+                    >
+                        <Star size={13} fill={sortByPulse ? '#a5b4fc' : 'none'} /> Pulse (High to Low)
+                    </button>
+                </div>
             </div>
 
             {/* Table */}
@@ -166,6 +208,7 @@ export default function StudentDirectoryPage() {
                         <table className="data-table" style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
                             <thead>
                                 <tr style={{ color: 'rgba(255,255,255,0.4)', fontSize: 11, letterSpacing: 1, borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                                    <th style={{ padding: '16px 24px', fontWeight: 600 }}>#</th>
                                     <th style={{ padding: '16px 24px', fontWeight: 600 }}>NAME</th>
                                     <th style={{ padding: '16px 24px', fontWeight: 600 }}>ROLL NO.</th>
                                     <th style={{ padding: '16px 24px', fontWeight: 600 }}>DEPARTMENT</th>
@@ -174,27 +217,43 @@ export default function StudentDirectoryPage() {
                                 </tr>
                             </thead>
                             <tbody>
-                                {filteredData.length === 0 ? (
+                                {sortedData.length === 0 ? (
                                     <tr>
-                                        <td colSpan={5} style={{ textAlign: 'center', padding: '40px', color: 'rgba(255,255,255,0.4)' }}>No students found.</td>
+                                        <td colSpan={6} style={{ textAlign: 'center', padding: '40px', color: 'rgba(255,255,255,0.4)' }}>No students found.</td>
                                     </tr>
-                                ) : filteredData.slice(0, visibleCount).map((s: any, i: number) => (
-                                    <tr key={s.id} style={{ borderBottom: i < visibleCount - 1 ? '1px solid rgba(255,255,255,0.05)' : 'none', fontSize: 13, transition: 'background 0.2s' }}
-                                        onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.02)'}
-                                        onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
-                                    >
-                                        <td data-label="NAME" style={{ padding: '16px 24px', display: 'flex', alignItems: 'center', gap: 12 }}>
-                                            <div style={{
-                                                width: 32, height: 32, borderRadius: '50%',
-                                                background: 'rgba(99, 102, 241, 0.1)',
-                                                color: '#60a5fa',
-                                                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                                fontSize: 12, fontWeight: 700
-                                            }}>
-                                                {getInitials(s.user?.name)}
-                                            </div>
-                                            <span style={{ fontWeight: 600 }}>{s.user?.name || 'User Name'}</span>
-                                        </td>
+                                ) : sortedData.slice(0, visibleCount).map((s: any, i: number) => {
+                                    const isMe = s.roll_number === currentUserRollNumber;
+                                    return (
+                                        <tr key={s.id} style={{ 
+                                                borderBottom: i < visibleCount - 1 ? '1px solid rgba(255,255,255,0.05)' : 'none', 
+                                                fontSize: 13, 
+                                                transition: 'background 0.2s',
+                                                background: isMe ? 'rgba(99, 102, 241, 0.08)' : 'transparent',
+                                                borderLeft: isMe ? '4px solid #6366f1' : 'none'
+                                            }}
+                                            onMouseEnter={e => e.currentTarget.style.background = isMe ? 'rgba(99, 102, 241, 0.12)' : 'rgba(255,255,255,0.02)'}
+                                            onMouseLeave={e => e.currentTarget.style.background = isMe ? 'rgba(99, 102, 241, 0.08)' : 'transparent'}
+                                        >
+                                            <td data-label="#" style={{ padding: '16px 24px', fontWeight: 700, color: sortByPulse ? '#f59e0b' : 'rgba(255,255,255,0.4)' }}>
+                                                {i + 1}
+                                            </td>
+                                            <td data-label="NAME" style={{ padding: '16px 24px' }}>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                                                    <div style={{
+                                                        width: 32, height: 32, borderRadius: '50%',
+                                                        background: 'rgba(99, 102, 241, 0.1)',
+                                                        color: '#60a5fa',
+                                                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                                        fontSize: 12, fontWeight: 700
+                                                    }}>
+                                                        {getInitials(s.user?.name)}
+                                                    </div>
+                                                    <span style={{ fontWeight: 600 }}>{s.user?.name || 'User Name'}</span>
+                                                    {isMe && (
+                                                        <span style={{ background: 'rgba(99, 102, 241, 0.2)', color: '#a5b4fc', padding: '2px 8px', borderRadius: 8, fontSize: 10, fontWeight: 700, marginLeft: 8 }}>YOU</span>
+                                                    )}
+                                                </div>
+                                            </td>
                                         <td data-label="ROLL NO." style={{ padding: '16px 24px' }}>
                                             <div style={{ background: 'rgba(139, 92, 246, 0.1)', color: '#a78bfa', padding: '2px 8px', borderRadius: 12, display: 'inline-block', fontSize: 11, fontWeight: 600 }}>
                                                 {s.roll_number}
@@ -214,11 +273,12 @@ export default function StudentDirectoryPage() {
                                             </div>
                                         </td>
                                     </tr>
-                                ))}
+                                    );
+                                })}
                             </tbody>
                         </table>
                     </div>
-                    {visibleCount < filteredData.length && (
+                    {visibleCount < sortedData.length && (
                         <div style={{ padding: '16px 24px', borderTop: '1px solid rgba(255,255,255,0.05)', textAlign: 'center' }}>
                             <button 
                                 onClick={() => setVisibleCount(v => v + 24)}

@@ -13,6 +13,7 @@ export async function GET() {
                 .from('students')
                 .select(`
                     id,
+                    user_id,
                     roll_number,
                     department,
                     year,
@@ -39,7 +40,7 @@ export async function GET() {
         }
 
         const mapped = allStudents.map(s => ({
-            id: s.id,
+            id: s.user_id || s.id,
             name: (s.users as any)?.name || 'Unknown',
             email: (s.users as any)?.email || 'No email',
             roll: s.roll_number,

@@ -26,3 +26,12 @@ ON CONFLICT (email) DO NOTHING;
 INSERT INTO maintenance_staff (user_id, department_code, department)
 VALUES ('e3c7d0f3-0f1a-6e9c-d8f5-1a4b3c7e0d9f', 'PLUMBING', 'Plumbing & Washrooms')
 ON CONFLICT DO NOTHING;
+
+-- 4. Hostel Staff
+INSERT INTO users (id, email, name, password_hash, role, is_active) 
+VALUES ('f4e8d1a2-1e2b-7f8c-e9a0-2b5c4d8e1f0b', 'staff.hostel@nitj.ac.in', 'Prakash Sharma (Hostel Manager)', '$2a$10$wK1m.XgU.dXXo4G2H/bFMOyZ7K/62fP3d1Lh4bA2d5t9j.Xz2e3B.', 'MAINTENANCE', TRUE)
+ON CONFLICT (email) DO NOTHING;
+
+INSERT INTO maintenance_staff (user_id, department_code, department)
+VALUES ('f4e8d1a2-1e2b-7f8c-e9a0-2b5c4d8e1f0b', 'HOSTEL_MAINT', 'Hostel Maintenance')
+ON CONFLICT DO NOTHING;

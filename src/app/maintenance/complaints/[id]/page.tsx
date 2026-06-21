@@ -2,8 +2,9 @@
 
 import { use, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, MapPin, Clock, CheckCircle, Image as ImageIcon, Zap, AlertTriangle } from 'lucide-react';
+import { ArrowLeft, MapPin, Clock, CheckCircle, Image as ImageIcon, Zap, AlertTriangle, Wrench } from 'lucide-react';
 import ComplaintTimeline from '@/components/complaints/ComplaintTimeline';
+
 
 export default function MaintenanceComplaintDetail({ params }: { params: Promise<{ id: string }> }) {
     const { id } = use(params);
@@ -13,6 +14,7 @@ export default function MaintenanceComplaintDetail({ params }: { params: Promise
     const [updating, setUpdating] = useState<string | null>(null);
     const [note, setNote] = useState('');
     const [file, setFile] = useState<File | null>(null);
+
 
     useEffect(() => {
         fetch(`/api/complaints/${id}`)
@@ -36,7 +38,8 @@ export default function MaintenanceComplaintDetail({ params }: { params: Promise
 
     async function updateStatus(newStatus: 'ASSIGNED' | 'IN_PROGRESS' | 'RESOLVED', requireNote = true) {
         if (!c) return;
-        const progressNote = note.trim() || (requireNote ? '' : 'Job accepted');
+        const defaultNote = newStatus === 'IN_PROGRESS' ? 'Work started on the complaint' : 'Job accepted';
+        const progressNote = note.trim() || (requireNote ? '' : defaultNote);
         if (requireNote && !progressNote && newStatus !== 'ASSIGNED') { 
             alert('Please add a progress note before updating status.'); 
             return; 
@@ -92,6 +95,7 @@ export default function MaintenanceComplaintDetail({ params }: { params: Promise
 
     return (
         <div style={{ maxWidth: 1000, margin: '0 auto', color: 'white', paddingBottom: 60 }}>
+
             <button 
                 onClick={() => router.push('/maintenance/dashboard')}
                 style={{ 
@@ -136,11 +140,8 @@ export default function MaintenanceComplaintDetail({ params }: { params: Promise
                 </div>
 
                 {/* Metrics Grid */}
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, marginBottom: 32 }}>
-                    <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 8, padding: '16px' }}>
-                        <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)', fontWeight: 700, letterSpacing: 1, marginBottom: 8 }}>SEVERITY</div>
-                        <div style={{ fontSize: 16, fontWeight: 600 }}>{c.severity}</div>
-                    </div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16, marginBottom: 32 }}>
+
                     <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 8, padding: '16px' }}>
                         <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)', fontWeight: 700, letterSpacing: 1, marginBottom: 8 }}>UPVOTES</div>
                         <div style={{ fontSize: 16, fontWeight: 600 }}>{c.upvote_count || 0}</div>
@@ -208,25 +209,16 @@ export default function MaintenanceComplaintDetail({ params }: { params: Promise
                 <div style={{ background: '#13151A', border: '1px solid rgba(6,182,212,0.3)', borderRadius: 16, padding: 32, marginBottom: 32 }}>
                     <h3 style={{ fontSize: 18, fontWeight: 600, margin: '0 0 24px 0', color: '#06b6d4' }}>🔧 Job Actions</h3>
                     
-                    {c.status === 'APPROVED' && (
+                    {(c.status === 'APPROVED' || c.status === 'ASSIGNED') && (
                         <div>
-                            <p style={{ color: 'rgba(255,255,255,0.6)', marginBottom: 16 }}>This job is available. Accept it to assign it to yourself.</p>
-                            <button
-                                disabled={updating === c.id}
-                                onClick={() => updateStatus('ASSIGNED', false)}
-                                style={{ padding: '12px 24px', background: '#f59e0b', border: 'none', borderRadius: '8px', cursor: 'pointer', color: 'white', fontWeight: 600, fontSize: 15, display: 'flex', alignItems: 'center', gap: 8 }}>
-                                {updating === c.id ? 'Accepting...' : 'Accept Job'}
-                            </button>
-                        </div>
-                    )}
-
-                    {c.status === 'ASSIGNED' && (
-                        <div>
-                            <p style={{ color: 'rgba(255,255,255,0.6)', marginBottom: 16 }}>You have accepted this job. Mark it as In Progress when you begin working.</p>
+                            <p style={{ color: 'rgba(255,255,255,0.6)', marginBottom: 16 }}>
+                                {c.status === 'APPROVED' ? 'This job is available. Start work to assign it to yourself.' : 'You have accepted this job. Mark it as In Progress when you begin working.'}
+                            </p>
                             <button
                                 disabled={updating === c.id}
                                 onClick={() => updateStatus('IN_PROGRESS', false)}
                                 style={{ padding: '12px 24px', background: '#3b82f6', border: 'none', borderRadius: '8px', cursor: 'pointer', color: 'white', fontWeight: 600, fontSize: 15, display: 'flex', alignItems: 'center', gap: 8 }}>
+                                <Wrench size={16} />
                                 {updating === c.id ? 'Starting...' : 'Start Work'}
                             </button>
                         </div>
@@ -248,29 +240,52 @@ export default function MaintenanceComplaintDetail({ params }: { params: Promise
                                 <label style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 8, display: 'flex', alignItems: 'center', gap: '6px' }}>
                                     <ImageIcon size={14} /> Work Evidence (Required)
                                 </label>
-                                <label style={{
-                                    display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-                                    border: file ? '2px solid #10b981' : '2px dashed var(--border-color)',
-                                    background: file ? 'rgba(16, 185, 129, 0.05)' : 'var(--bg-glass)',
-                                    padding: '24px 16px', borderRadius: '8px', cursor: 'pointer', transition: 'all 0.2s', width: 'fit-content', minWidth: 300
-                                }}>
-                                    <input
-                                        type="file" accept="image/*"
-                                        onChange={e => setFile(e.target.files?.[0] || null)}
-                                        style={{ display: 'none' }}
-                                    />
-                                    {file ? (
-                                        <>
-                                            <CheckCircle size={24} color="#10b981" style={{ marginBottom: '8px' }} />
-                                            <span style={{ color: '#10b981', fontWeight: 600, fontSize: '13px' }}>{file.name}</span>
-                                        </>
-                                    ) : (
-                                        <>
-                                            <ImageIcon size={24} color="var(--text-muted)" style={{ marginBottom: '8px' }} />
-                                            <span style={{ color: 'var(--text-primary)', fontWeight: 500, fontSize: '13px' }}>Tap to take a photo or upload</span>
-                                        </>
-                                    )}
-                                </label>
+
+                                {file ? (
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 14px', background: 'rgba(16,185,129,0.08)', border: '2px solid #10b981', borderRadius: 8 }}>
+                                            <CheckCircle size={20} color="#10b981" />
+                                            <span style={{ color: '#10b981', fontWeight: 600, fontSize: 13, flex: 1 }}>{file.name}</span>
+                                        </div>
+                                        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                                            <button type="button" onClick={() => setFile(null)} style={{ cursor: 'pointer', background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.4)', color: '#ef4444', padding: '6px 14px', borderRadius: 8, fontSize: 12, fontWeight: 600 }}>
+                                                ✕ Remove
+                                            </button>
+                                            <label style={{ cursor: 'pointer', background: 'rgba(6,182,212,0.1)', border: '1px solid rgba(6,182,212,0.4)', color: '#06b6d4', padding: '6px 14px', borderRadius: 8, fontSize: 12, fontWeight: 600 }}>
+                                                <input type="file" accept="image/*" capture="environment" onChange={e => setFile(e.target.files?.[0] || null)} style={{ display: 'none' }} />
+                                                📷 Retake
+                                            </label>
+                                            <label style={{ cursor: 'pointer', background: 'rgba(139,92,246,0.1)', border: '1px solid rgba(139,92,246,0.4)', color: '#8b5cf6', padding: '6px 14px', borderRadius: 8, fontSize: 12, fontWeight: 600 }}>
+                                                <input type="file" accept="image/*" onChange={e => setFile(e.target.files?.[0] || null)} style={{ display: 'none' }} />
+                                                🖼️ Replace
+                                            </label>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                                        {/* Camera — opens native device camera */}
+                                        <label style={{
+                                            display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 6,
+                                            padding: '20px 12px', border: '2px solid rgba(6,182,212,0.4)', borderRadius: 10,
+                                            background: 'rgba(6,182,212,0.06)', cursor: 'pointer', transition: 'all 0.2s'
+                                        }}>
+                                            <input type="file" accept="image/*" capture="environment" onChange={e => setFile(e.target.files?.[0] || null)} style={{ display: 'none' }} />
+                                            <span style={{ fontSize: 28 }}>📷</span>
+                                            <span style={{ color: '#06b6d4', fontWeight: 700, fontSize: 13 }}>Camera</span>
+                                            <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: 11 }}>Take photo now</span>
+                                        </label>
+                                        <label style={{
+                                            display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 6,
+                                            padding: '20px 12px', border: '2px solid rgba(139,92,246,0.4)', borderRadius: 10,
+                                            background: 'rgba(139,92,246,0.06)', cursor: 'pointer', transition: 'all 0.2s'
+                                        }}>
+                                            <input type="file" accept="image/*" onChange={e => setFile(e.target.files?.[0] || null)} style={{ display: 'none' }} />
+                                            <span style={{ fontSize: 28 }}>🖼️</span>
+                                            <span style={{ color: '#8b5cf6', fontWeight: 700, fontSize: 13 }}>Gallery</span>
+                                            <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: 11 }}>Choose from device</span>
+                                        </label>
+                                    </div>
+                                )}
                             </div>
                             <button
                                 disabled={updating === c.id}
@@ -285,16 +300,14 @@ export default function MaintenanceComplaintDetail({ params }: { params: Promise
             )}
 
             {/* Timeline */}
-            {c.complaint_updates && c.complaint_updates.length > 0 && (
-                <div style={{ background: '#13151A', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 16, padding: 32 }}>
-                    <h3 style={{ fontSize: 18, fontWeight: 600, margin: '0 0 24px 0' }}>📋 Status Timeline</h3>
-                    <ComplaintTimeline
-                        updates={c.complaint_updates}
-                        currentStatus={c.status}
-                        createdAt={c.created_at}
-                    />
-                </div>
-            )}
+            <div style={{ background: '#13151A', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 16, padding: 32 }}>
+                <h3 style={{ fontSize: 18, fontWeight: 600, margin: '0 0 24px 0' }}>📋 Status Timeline</h3>
+                <ComplaintTimeline
+                    updates={c.complaint_updates || []}
+                    currentStatus={c.status}
+                    createdAt={c.created_at}
+                />
+            </div>
         </div>
     );
 }

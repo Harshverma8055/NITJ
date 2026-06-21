@@ -34,19 +34,35 @@ export async function GET(req: NextRequest) {
             .order('rating', { ascending: false })
             .limit(3);
 
-        // 3. Get Recent Announcements
+        // 3. Get Recent Announcements (from complaints table)
         const { data: announcements } = await supabase
-            .from('announcements')
-            .select('id, title, content, severity, created_at, created_by_id, users:created_by_id(name)')
-            .eq('is_active', true)
+            .from('complaints')
+            .select('id, title, content:description, severity:is_emergency, created_at, reporter_student_id, users:reporter_student_id(name)')
+            .eq('category', 'ANNOUNCEMENT')
+            .in('building', ['ALL', 'STUDENTS']) // Audience filter
             .order('created_at', { ascending: false })
             .limit(3);
+
+        // Count how many students have a higher rating to compute rank
+        const { count: higherRankCount } = await supabase
+            .from('students')
+            .select('*', { count: 'exact', head: true })
+            .gt('rating', student.rating || 0);
+
+        const currentRank = (higherRankCount || 0) + 1;
+
+        // Count total number of students
+        const { count: totalStudentsCount } = await supabase
+            .from('students')
+            .select('*', { count: 'exact', head: true });
 
         return NextResponse.json({
             student: { ...student, user: student.users },
             complaints: complaints || [],
             leaderboard: leaderboard || [],
-            announcements: announcements || []
+            announcements: announcements || [],
+            rank: currentRank,
+            totalStudents: totalStudentsCount || 1
         });
 
     } catch (err) {

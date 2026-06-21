@@ -16,7 +16,7 @@ export default function NewComplaintPage() {
     const [building, setBuilding] = useState('');
     const [floor, setFloor] = useState('');
     const [room, setRoom] = useState('');
-    const [severity, setSeverity] = useState('MODERATE');
+
     const [isEmergency, setIsEmergency] = useState(false);
     const [isAnonymous, setIsAnonymous] = useState(false);
     const [mediaFile, setMediaFile] = useState<File | null>(null);
@@ -42,6 +42,11 @@ export default function NewComplaintPage() {
             setLocationStatus("Geolocation is not supported by your browser");
             return;
         }
+        
+        // Check if running on non-secure origin (HTTP on non-localhost)
+        const isUnsecuredHTTP = window.location.protocol === 'http:' && 
+                                !['localhost', '127.0.0.1'].includes(window.location.hostname);
+        
         setLocationStatus("Locating...");
         navigator.geolocation.getCurrentPosition(
             (position) => {
@@ -49,7 +54,31 @@ export default function NewComplaintPage() {
                 setGpsLng(position.coords.longitude);
                 setLocationStatus("Location captured successfully ✓");
             },
-            () => setLocationStatus("Unable to retrieve your location")
+            (err) => {
+                console.error("Geolocation error details:", err);
+                if (isUnsecuredHTTP) {
+                    setLocationStatus("GPS Blocked: Mobile browsers block GPS over HTTP. Please use manual location fields or host via HTTPS.");
+                } else {
+                    switch (err.code) {
+                        case err.PERMISSION_DENIED:
+                            setLocationStatus("Permission Denied: Please allow location access in your browser/app permissions.");
+                            break;
+                        case err.POSITION_UNAVAILABLE:
+                            setLocationStatus("Unavailable: Device GPS is turned off or unable to determine position.");
+                            break;
+                        case err.TIMEOUT:
+                            setLocationStatus("Timeout: Retrying GPS capture timed out. Try again or enter manually.");
+                            break;
+                        default:
+                            setLocationStatus(`Error (${err.code}): ${err.message || 'Unable to retrieve your location'}`);
+                    }
+                }
+            },
+            {
+                enableHighAccuracy: true,
+                timeout: 8000,
+                maximumAge: 0
+            }
         );
     };
 
@@ -159,7 +188,7 @@ export default function NewComplaintPage() {
             if (building) formData.append('building', building);
             if (floor) formData.append('floor', floor);
             if (room) formData.append('room', room);
-            formData.append('severity', severity);
+            formData.append('severity', 'MODERATE');
             formData.append('isEmergency', String(isEmergency));
             formData.append('isAnonymous', String(isAnonymous));
             if (gpsLat && gpsLng) {
@@ -240,36 +269,61 @@ export default function NewComplaintPage() {
                             Tap below to take a photo of the issue or upload from gallery.
                         </p>
 
-                        <div style={{ 
-                            border: '2px dashed rgba(255,255,255,0.2)', borderRadius: 24, padding: previewUrl ? 32 : 60,
-                            display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-                            background: 'rgba(255,255,255,0.02)', position: 'relative', cursor: compressing ? 'wait' : 'pointer',
-                            marginBottom: 24
-                        }}>
-                            <input 
-                                type="file" accept="image/*,video/*" capture="environment"
-                                style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', opacity: 0, cursor: compressing ? 'wait' : 'pointer' }}
-                                onChange={handleFileChange}
-                                disabled={compressing}
-                            />
-                            {compressing ? (
-                                <div style={{ textAlign: 'center' }}>
-                                    <div className="spinner" style={{ margin: '0 auto 16px' }}></div>
-                                    <div style={{ color: '#818cf8', fontWeight: 600, fontSize: 16 }}>Compressing image...</div>
+                        {compressing ? (
+                            <div style={{ 
+                                border: '2px dashed rgba(255,255,255,0.2)', borderRadius: 24, padding: 60,
+                                display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                                background: 'rgba(255,255,255,0.02)', marginBottom: 24
+                            }}>
+                                <div className="spinner" style={{ margin: '0 auto 16px' }}></div>
+                                <div style={{ color: '#818cf8', fontWeight: 600, fontSize: 16 }}>Compressing image...</div>
+                            </div>
+                        ) : previewUrl ? (
+                            <div style={{ 
+                                border: '2px solid #818cf8', borderRadius: 24, padding: 32,
+                                display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                                background: 'rgba(129,140,248,0.05)', marginBottom: 24, position: 'relative'
+                            }}>
+                                <img src={previewUrl} alt="Preview" style={{ maxWidth: '100%', maxHeight: 200, borderRadius: 12, marginBottom: 16 }} />
+                                <div style={{ color: '#818cf8', fontWeight: 600 }}>{mediaFile?.name}</div>
+                                <div style={{ display: 'flex', gap: 10, marginTop: 16, flexWrap: 'wrap', justifyContent: 'center' }}>
+                                    <button type="button" onClick={() => { setMediaFile(null); setPreviewUrl(null); }} style={{ cursor: 'pointer', background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.4)', color: '#ef4444', padding: '8px 16px', borderRadius: 8, fontSize: 13, fontWeight: 600 }}>
+                                        ✕ Remove
+                                    </button>
+                                    <label style={{ cursor: 'pointer', background: 'rgba(6,182,212,0.1)', border: '1px solid rgba(6,182,212,0.4)', color: '#06b6d4', padding: '8px 16px', borderRadius: 8, fontSize: 13, fontWeight: 600 }}>
+                                        <input type="file" accept="image/*" capture="environment" onChange={handleFileChange} style={{ display: 'none' }} />
+                                        📷 Retake
+                                    </label>
+                                    <label style={{ cursor: 'pointer', background: 'rgba(139,92,246,0.1)', border: '1px solid rgba(139,92,246,0.4)', color: '#8b5cf6', padding: '8px 16px', borderRadius: 8, fontSize: 13, fontWeight: 600 }}>
+                                        <input type="file" accept="image/*" onChange={handleFileChange} style={{ display: 'none' }} />
+                                        🖼️ Replace
+                                    </label>
                                 </div>
-                            ) : previewUrl ? (
-                                <div style={{ textAlign: 'center', width: '100%' }}>
-                                    <img src={previewUrl} alt="Preview" style={{ maxWidth: '100%', maxHeight: 200, borderRadius: 12, marginBottom: 16 }} />
-                                    <div style={{ color: '#818cf8', fontWeight: 600 }}>{mediaFile?.name}</div>
-                                    <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: 13, marginTop: 8 }}>Tap to retake</div>
-                                </div>
-                            ) : (
-                                <div style={{ textAlign: 'center', pointerEvents: 'none' }}>
-                                    <Camera size={48} color="rgba(255,255,255,0.2)" style={{ margin: '0 auto 16px' }} />
-                                    <div style={{ fontSize: 18, color: 'white', fontWeight: 600, marginBottom: 8 }}><span style={{ color: '#818cf8' }}>Tap to capture</span> or browse</div>
-                                </div>
-                            )}
-                        </div>
+                            </div>
+                        ) : (
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 24 }}>
+                                <label style={{
+                                    display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8,
+                                    padding: '28px 16px', border: '2px solid rgba(6,182,212,0.4)', borderRadius: 20,
+                                    background: 'rgba(6,182,212,0.05)', cursor: 'pointer', transition: 'all 0.2s'
+                                }}>
+                                    <input type="file" accept="image/*" capture="environment" onChange={handleFileChange} disabled={compressing} style={{ display: 'none' }} />
+                                    <span style={{ fontSize: 36 }}>📷</span>
+                                    <span style={{ color: '#06b6d4', fontWeight: 700, fontSize: 15 }}>Camera</span>
+                                    <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: 12, textAlign: 'center' }}>Take a photo on the spot</span>
+                                </label>
+                                <label style={{
+                                    display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8,
+                                    padding: '28px 16px', border: '2px solid rgba(139,92,246,0.4)', borderRadius: 20,
+                                    background: 'rgba(139,92,246,0.05)', cursor: 'pointer', transition: 'all 0.2s'
+                                }}>
+                                    <input type="file" accept="image/*" onChange={handleFileChange} disabled={compressing} style={{ display: 'none' }} />
+                                    <span style={{ fontSize: 36 }}>🖼️</span>
+                                    <span style={{ color: '#8b5cf6', fontWeight: 700, fontSize: 15 }}>Gallery</span>
+                                    <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: 12, textAlign: 'center' }}>Choose from your device</span>
+                                </label>
+                            </div>
+                        )}
                         
                         <div style={{ background: 'rgba(16,185,129,0.05)', border: '1px dashed rgba(16,185,129,0.3)', borderRadius: 16, padding: 20, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                             <div>
@@ -383,10 +437,7 @@ export default function NewComplaintPage() {
                                 <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: 14, fontWeight: 600 }}>Category</div>
                                 <div style={{ color: 'white', fontSize: 15 }}>{category.replace('_', ' ')}</div>
                             </div>
-                            <div style={{ display: 'grid', gridTemplateColumns: '150px 1fr', padding: 20, borderBottom: '1px solid rgba(255,255,255,0.05)', alignItems: 'center' }}>
-                                <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: 14, fontWeight: 600 }}>Severity</div>
-                                <div style={{ color: 'white', fontSize: 15 }}>{severity}</div>
-                            </div>
+
                             <div style={{ display: 'grid', gridTemplateColumns: '150px 1fr', padding: 20, borderBottom: '1px solid rgba(255,255,255,0.05)', alignItems: 'center' }}>
                                 <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: 14, fontWeight: 600 }}>Zone</div>
                                 <div style={{ color: 'white', fontSize: 15 }}>{zone.replace('_', ' ')}</div>

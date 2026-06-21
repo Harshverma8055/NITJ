@@ -4,8 +4,8 @@ import { use, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import ComplaintTimeline from '@/components/complaints/ComplaintTimeline';
 import {
-    getPriorityColor, getStatusColor, getCategoryIcon,
-    STATUS_LABELS, PRIORITY_LABELS, ZONE_LABELS,
+    getStatusColor, getCategoryIcon,
+    STATUS_LABELS, ZONE_LABELS,
 } from '@/lib/complaints';
 import { MapPin, AlertTriangle, ArrowLeft, CheckCircle, ThumbsUp, Bell, BellOff, MessageSquare } from 'lucide-react';
 
@@ -126,7 +126,6 @@ export default function StudentComplaintDetail({ params }: { params: Promise<{ i
         </div>
     );
 
-    const pColor = getPriorityColor(data.priority);
     const sColor = getStatusColor(data.status);
 
     return (
@@ -193,9 +192,6 @@ export default function StudentComplaintDetail({ params }: { params: Promise<{ i
 
                 {/* Badges */}
                 <div style={{ display: 'flex', gap: 10, marginBottom: 20, flexWrap: 'wrap' }}>
-                    <span style={{ color: pColor, background: `${pColor}20`, padding: '4px 12px', borderRadius: 20, fontSize: 13, fontWeight: 700 }}>
-                        {PRIORITY_LABELS[data.priority as keyof typeof PRIORITY_LABELS] || data.priority}
-                    </span>
                     <span style={{ color: sColor, background: `${sColor}20`, padding: '4px 12px', borderRadius: 20, fontSize: 13, fontWeight: 700 }}>
                         {STATUS_LABELS[data.status as keyof typeof STATUS_LABELS] || data.status}
                     </span>

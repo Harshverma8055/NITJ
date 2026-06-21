@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
-import { LayoutDashboard, CheckSquare, Info, LogOut, Wrench, ClipboardList } from 'lucide-react';
+import { LayoutDashboard, CheckSquare, Info, LogOut, Wrench, ClipboardList, User } from 'lucide-react';
 
 export default function MaintenanceLayout({ children }: { children: React.ReactNode }) {
     const router = useRouter();
@@ -23,6 +23,7 @@ export default function MaintenanceLayout({ children }: { children: React.ReactN
     const navItems = [
         { name: 'My Queue', path: '/maintenance/dashboard', icon: ClipboardList },
         { name: 'Resolved History', path: '/maintenance/history', icon: CheckSquare },
+        { name: 'My Profile', path: '/maintenance/profile', icon: User },
         { name: 'About Project', path: '/about', icon: Info },
     ];
 
@@ -35,9 +36,9 @@ export default function MaintenanceLayout({ children }: { children: React.ReactN
     }
 
     return (
-        <div style={{ display: 'flex', height: '100vh', background: 'var(--bg-primary)' }}>
+        <div className="dashboard-layout" style={{ display: 'flex', height: '100vh', background: 'var(--bg-primary)' }}>
             {/* Sidebar */}
-            <div style={{
+            <div className="sidebar maintenance-sidebar" style={{
                 width: 260,
                 background: '#0B0E14', // Match the dark panel background
                 borderRight: '1px solid rgba(255,255,255,0.05)',
@@ -46,7 +47,7 @@ export default function MaintenanceLayout({ children }: { children: React.ReactN
                 padding: '24px 0'
             }}>
                 {/* Logo */}
-                <div style={{ padding: '0 24px', display: 'flex', alignItems: 'center', gap: 12, marginBottom: 40 }}>
+                <div className="sidebar-logo" style={{ padding: '0 24px', display: 'flex', alignItems: 'center', gap: 12, marginBottom: 40 }}>
                     <div style={{ background: '#06b6d4', padding: 8, borderRadius: 8, display: 'flex' }}>
                         <Wrench size={20} color="white" />
                     </div>
@@ -57,12 +58,13 @@ export default function MaintenanceLayout({ children }: { children: React.ReactN
                 </div>
 
                 {/* Nav Links */}
-                <nav style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 4 }}>
+                <nav className="sidebar-nav" style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 4 }}>
                     {navItems.map(item => {
                         const active = pathname === item.path || pathname.startsWith(item.path + '/');
                         return (
                             <button
                                 key={item.name}
+                                className={`nav-link ${active ? 'maintenance-active active' : ''}`}
                                 onClick={() => router.push(item.path)}
                                 style={{
                                     display: 'flex', alignItems: 'center', gap: 12,
@@ -82,7 +84,7 @@ export default function MaintenanceLayout({ children }: { children: React.ReactN
                 </nav>
 
                 {/* User Profile & Sign Out */}
-                <div style={{ padding: '0 16px' }}>
+                <div className="sidebar-footer" style={{ padding: '0 16px' }}>
                     <div style={{
                         padding: 12, background: 'rgba(255,255,255,0.03)',
                         borderRadius: 12, display: 'flex', alignItems: 'center', gap: 12,
@@ -127,7 +129,7 @@ export default function MaintenanceLayout({ children }: { children: React.ReactN
             </div>
 
             {/* Main Content Area */}
-            <div style={{ flex: 1, overflowY: 'auto', padding: '32px 40px', background: 'var(--bg-primary)' }}>
+            <div className="main-content" style={{ flex: 1, overflowY: 'auto', padding: '32px 40px', background: 'var(--bg-primary)' }}>
                 {children}
             </div>
         </div>

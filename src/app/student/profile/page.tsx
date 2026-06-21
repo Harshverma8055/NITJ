@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { ShieldCheck, User, MapPin, Mail, GraduationCap, Activity, Award } from 'lucide-react';
+import { ShieldCheck, User, MapPin, Mail, GraduationCap, Activity, Award, LogOut } from 'lucide-react';
 
 export default function ProfilePage() {
     const [student, setStudent] = useState<any>(null);
@@ -74,7 +74,7 @@ export default function ProfilePage() {
             </div>
 
             {/* Academic Info */}
-            <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 24, padding: 32 }}>
+            <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 24, padding: 32, marginBottom: 32 }}>
                 <h3 style={{ fontSize: 18, margin: '0 0 24px 0', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 12 }}>
                     <GraduationCap size={20} color="#6366f1" /> Academic Profile
                 </h3>
@@ -89,6 +89,40 @@ export default function ProfilePage() {
                         <div style={{ fontSize: 16, fontWeight: 500, color: 'white' }}>{student.roll_number}</div>
                     </div>
                 </div>
+            </div>
+
+            {/* Sign Out Button */}
+            <div style={{ display: 'flex', justifyContent: 'center' }}>
+                <button
+                    onClick={async () => {
+                        await fetch('/api/auth/logout', { method: 'POST' });
+                        window.location.href = '/login';
+                    }}
+                    style={{
+                        background: 'rgba(239, 68, 68, 0.1)',
+                        border: '1px solid rgba(239, 68, 68, 0.3)',
+                        borderRadius: 12,
+                        padding: '14px 40px',
+                        color: '#ef4444',
+                        fontWeight: 600,
+                        fontSize: 15,
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 8,
+                        transition: 'all 0.2s'
+                    }}
+                    onMouseEnter={e => {
+                        e.currentTarget.style.background = 'rgba(239, 68, 68, 0.2)';
+                        e.currentTarget.style.transform = 'translateY(-1px)';
+                    }}
+                    onMouseLeave={e => {
+                        e.currentTarget.style.background = 'rgba(239, 68, 68, 0.1)';
+                        e.currentTarget.style.transform = 'translateY(0)';
+                    }}
+                >
+                    <LogOut size={18} /> Sign Out
+                </button>
             </div>
         </div>
     );

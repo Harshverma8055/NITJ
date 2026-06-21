@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { supabaseAdmin as supabase } from '@/lib/supabase';
 import { getSession } from '@/lib/auth';
 import { logAdminAction } from '@/lib/audit';
+import { routeComplaint } from '@/lib/department-router';
 
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
     try {
@@ -11,6 +12,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
             .from('complaints')
             .select(`
                 *,
+                complaint_media(*),
                 staff:assigned_staff_id(id, department, users:user_id(name)),
                 complaint_updates (
                     id, note, new_status, created_at,
@@ -58,36 +60,60 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
             // 1. Get the complaint to find category and reporter
             const { data: complaint, error: fetchErr } = await supabase
                 .from('complaints')
-                .select('category, reporter_student_id, status, is_emergency')
+                .select('category, zone, severity, priority, reporter_student_id, status, is_emergency')
                 .eq('id', id)
                 .single();
 
             if (fetchErr || !complaint) return NextResponse.json({ error: 'Complaint not found' }, { status: 404 });
             if (complaint.status !== 'PENDING_REVIEW') return NextResponse.json({ error: 'Complaint already processed' }, { status: 400 });
 
-            // 2. Find a matching staff member for this category
-            // We map categories to staff departments (e.g. ELECTRICAL -> ELECTRICAL_MAINT)
-            let staffDeptQuery = complaint.category;
-            if (complaint.category === 'ELECTRICAL') staffDeptQuery = 'ELECTRICAL_MAINT';
-            if (complaint.category === 'PLUMBING') staffDeptQuery = 'PLUMBING_MAINT';
+            // 2. Find the correct technical department for this category/zone
+            const routing = routeComplaint({
+                category: complaint.category,
+                zone: complaint.zone,
+                severity: complaint.severity,
+                isEmergency: false, // Resolve the technical department (e.g. ELECTRICAL_MAINT) instead of CAMPUS_SECURITY
+                priority: complaint.priority,
+            });
             
-            const { data: staff, error: staffErr } = await supabase
+            const resolvedDeptCode = routing.department;
+            const staffDeptSearch = resolvedDeptCode.split('_')[0]; // e.g. ELECTRICAL
+            
+            const { data: staff } = await supabase
                 .from('maintenance_staff')
                 .select('id')
-                .ilike('department', `%${staffDeptQuery.split('_')[0]}%`)
+                .ilike('department', `%${staffDeptSearch}%`)
                 .limit(1)
-                .single();
+                .maybeSingle();
 
-            // 3. Update the complaint: status = IN_PROGRESS, assign staff
+            // 3. Update the complaint: status = ASSIGNED if staff is assigned, otherwise APPROVED
+            const nextStatus = staff ? 'ASSIGNED' : 'APPROVED';
             const { error: updateErr } = await supabase
                 .from('complaints')
                 .update({ 
-                    status: 'IN_PROGRESS', 
-                    assigned_staff_id: staff ? staff.id : null 
+                    status: nextStatus, 
+                    assigned_staff_id: staff ? staff.id : null,
+                    assigned_department_code: resolvedDeptCode
                 })
                 .eq('id', id);
 
             if (updateErr) throw updateErr;
+
+            // Log timeline update in complaint_updates
+            const { error: timelineErr } = await supabase
+                .from('complaint_updates')
+                .insert({
+                    complaint_id: id,
+                    old_status: 'PENDING_REVIEW',
+                    new_status: nextStatus,
+                    note: staff ? 'Complaint approved and assigned to staff' : 'Complaint approved by administrator',
+                    posted_by_user_id: session.userId,
+                    is_system: false
+                });
+
+            if (timelineErr) {
+                console.error('Timeline log error:', timelineErr);
+            }
 
             // Log action
             await logAdminAction(

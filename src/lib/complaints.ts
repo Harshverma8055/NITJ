@@ -72,30 +72,7 @@ export const PRIORITY_LABELS: Record<ComplaintPriority, string> = {
     EMERGENCY: '🚨 EMERGENCY',
 };
 
-// ─── PRIORITY ALGORITHM ───────────────────────────────────────────────────────
-
-const SEVERITY_WEIGHT: Record<ComplaintSeverity, number> = {
-    CRITICAL: 40,
-    HIGH:     25,
-    MODERATE: 12,
-    LOW:       5,
-};
-
-const ZONE_WEIGHT: Record<CampusZone, number> = {
-    LAB:            1.5,
-    HOSTEL_BOYS:    1.4,
-    HOSTEL_GIRLS:   1.4,
-    ACADEMIC_BLOCK: 1.3,
-    LIBRARY:        1.2,
-    SPORTS_COMPLEX: 1.1,
-    CAFETERIA:      1.1,
-    AUDITORIUM:     1.0,
-    ADMIN_BLOCK:    1.0,
-    ROAD:           1.0,
-    MAIN_GATE:      0.9,
-    PARKING:        0.8,
-    OTHER:          1.0,
-};
+// ─── PRIORITY ALGORITHM (REMOVED) ─────────────────────────────────────────────
 
 /** SLA hours by priority level */
 export const SLA_HOURS: Record<ComplaintPriority, number> = {
@@ -105,37 +82,6 @@ export const SLA_HOURS: Record<ComplaintPriority, number> = {
     MODERATE:  168,
     LOW:       336,
 };
-
-export interface PriorityInput {
-    upvotes:     number;
-    severity:    ComplaintSeverity;
-    isEmergency: boolean;
-    zone:        CampusZone;
-    ageHours:    number;
-    duplicates:  number;
-}
-
-export function calculatePriorityScore(params: PriorityInput): {
-    score: number;
-    priority: ComplaintPriority;
-} {
-    if (params.isEmergency) return { score: 9999, priority: 'EMERGENCY' };
-
-    const base =
-        params.upvotes * 2.5 +
-        (SEVERITY_WEIGHT[params.severity] ?? 12) +
-        params.duplicates * 3 +
-        (params.ageHours / 24) * 0.5;
-
-    const score = Math.round(base * (ZONE_WEIGHT[params.zone] ?? 1.0) * 100) / 100;
-
-    const priority: ComplaintPriority =
-        score >= 100 ? 'CRITICAL' :
-        score >= 50  ? 'HIGH'     :
-        score >= 20  ? 'MODERATE' : 'LOW';
-
-    return { score, priority };
-}
 
 export function getSLADeadline(priority: ComplaintPriority, createdAt: Date): Date {
     const hours = SLA_HOURS[priority] ?? 168;

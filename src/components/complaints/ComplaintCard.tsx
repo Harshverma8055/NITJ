@@ -1,6 +1,6 @@
 'use client';
 
-import { getPriorityColor, getStatusColor, getCategoryIcon, STATUS_LABELS, PRIORITY_LABELS, ZONE_LABELS } from '@/lib/complaints';
+import { getStatusColor, getCategoryIcon, STATUS_LABELS, ZONE_LABELS } from '@/lib/complaints';
 import type { ComplaintListItem } from '@/lib/complaints';
 import { ThumbsUp, MessageCircle, MapPin, Clock, AlertTriangle } from 'lucide-react';
 
@@ -22,7 +22,6 @@ function timeAgo(dateStr: string): string {
 }
 
 export default function ComplaintCard({ complaint, onVote, onClick, showVote = true }: Props) {
-    const priorityColor = getPriorityColor(complaint.priority);
     const statusColor   = getStatusColor(complaint.status);
     const icon          = getCategoryIcon(complaint.category);
 
@@ -33,7 +32,7 @@ export default function ComplaintCard({ complaint, onVote, onClick, showVote = t
                 background:    'var(--bg-secondary)',
                 border:        complaint.is_emergency
                     ? '2px solid #dc2626'
-                    : `1px solid ${priorityColor}40`,
+                    : '1px solid var(--border-color)',
                 borderRadius:  'var(--radius-lg)',
                 overflow:      'hidden',
                 cursor:        onClick ? 'pointer' : 'default',
@@ -93,16 +92,10 @@ export default function ComplaintCard({ complaint, onVote, onClick, showVote = t
             )}
 
             <div style={{ padding: '16px 20px' }}>
-                {/* Top Row: Category icon + Priority + Status */}
+                {/* Top Row: Category icon + Status */}
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10, flexWrap: 'wrap', gap: 6 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                         <span style={{ fontSize: 20 }}>{icon}</span>
-                        <span style={{
-                            fontSize: 11, fontWeight: 700, textTransform: 'uppercase',
-                            color: priorityColor, letterSpacing: 1,
-                        }}>
-                            {PRIORITY_LABELS[complaint.priority]}
-                        </span>
                         {complaint.sla_breached && (
                             <span style={{
                                 background: '#dc2626', color: 'white',

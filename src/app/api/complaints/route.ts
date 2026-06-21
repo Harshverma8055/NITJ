@@ -13,7 +13,7 @@ const createComplaintSchema = z.object({
     description:  z.string().min(20).max(2000),
     category:     z.enum(['ELECTRICAL','PLUMBING','CIVIL','SANITATION','IT_NETWORK',
                           'FURNITURE','EQUIPMENT','SAFETY','HOSTEL','SPORTS','CAFETERIA','OTHER']),
-    severity:     z.enum(['LOW','MODERATE','HIGH','CRITICAL']),
+    severity:     z.enum(['LOW','MODERATE','HIGH','CRITICAL']).default('MODERATE'), // always MODERATE from students
     zone:         z.enum(['ACADEMIC_BLOCK','HOSTEL_BOYS','HOSTEL_GIRLS','LIBRARY','LAB',
                           'SPORTS_COMPLEX','CAFETERIA','PARKING','ROAD','MAIN_GATE',
                           'AUDITORIUM','ADMIN_BLOCK','OTHER']),
@@ -36,10 +36,12 @@ const listQuerySchema = z.object({
     search:     z.string().max(100).optional(),
     page:       z.coerce.number().int().min(1).default(1),
     limit:      z.coerce.number().int().min(1).max(50).default(20),
-    sort:       z.enum(['latest','priority','upvotes']).default('priority'),
+    sort:       z.enum(['latest','priority','upvotes','resolved_at']).default('latest'),
+    my_only:    z.string().optional(),
+    is_emergency: z.string().optional(),
 });
 
-// âââ GET /api/complaints ââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+// ————————————————————————————————————————————————————————————————————————————————
 export async function GET(request: NextRequest) {
     try {
         const session = await getSession();
@@ -67,14 +69,17 @@ export async function GET(request: NextRequest) {
                 created_at, reporter_student_id, assigned_staff_id, assigned_department_code,
                 gps_lat, gps_lng,
                 complaint_media(public_url, is_before, media_type)
-            `, { count: 'exact' });
+            `, { count: 'exact' })
+            .neq('category', 'ANNOUNCEMENT');
 
         // Role-based filters
         if (session.role === 'STUDENT') {
-            // Students see pending/approved/resolved/in-progress complaints + their own (excluding rejected/archived from others)
-            dbQuery = dbQuery.or(
-                `status.in.(PENDING_REVIEW,APPROVED,ASSIGNED,IN_PROGRESS,RESOLVED),reporter_student_id.eq.${studentId}`
-            );
+            if (query.my_only === 'true') {
+                dbQuery = dbQuery.eq('reporter_student_id', studentId);
+            } else {
+                // Students see approved/assigned/in-progress/resolved complaints only on the main feed
+                dbQuery = dbQuery.in('status', ['APPROVED','ASSIGNED','IN_PROGRESS','RESOLVED']);
+            }
         }
         // Faculty see all non-pending
         if (session.role === 'FACULTY') {
@@ -116,12 +121,15 @@ export async function GET(request: NextRequest) {
         if (query.priority)   dbQuery = dbQuery.eq('priority', query.priority);
         if (query.department) dbQuery = dbQuery.eq('assigned_department_code', query.department);
         if (query.search)     dbQuery = dbQuery.ilike('title', `%${query.search}%`);
+        if (query.is_emergency) dbQuery = dbQuery.eq('is_emergency', query.is_emergency === 'true');
 
         // Sort
         if (query.sort === 'priority')
-            dbQuery = dbQuery.order('priority_score', { ascending: false });
+            dbQuery = dbQuery.order('created_at', { ascending: false });
         else if (query.sort === 'upvotes')
             dbQuery = dbQuery.order('upvote_count', { ascending: false });
+        else if (query.sort === 'resolved_at')
+            dbQuery = dbQuery.order('updated_at', { ascending: false });
         else
             dbQuery = dbQuery.order('created_at', { ascending: false });
 
@@ -233,7 +241,7 @@ export async function POST(request: NextRequest) {
                 description: formData.get('description') as string || '',
                 category: formData.get('category') as string || '',
                 zone: formData.get('zone') as string || '',
-                severity: formData.get('severity') as string || 'MODERATE',
+                severity: 'MODERATE', // severity is no longer set by students
                 building: formData.get('building') as string || undefined,
                 floor: formData.get('floor') as string || undefined,
                 room: formData.get('room') as string || undefined,
@@ -247,16 +255,19 @@ export async function POST(request: NextRequest) {
             // Handle image upload to Supabase storage if file is provided
             const media = formData.get('media') as File | null;
             if (media && media.size > 0) {
-                const supabase = getSupabase();
+                // Use supabaseAdmin to bypass storage RLS
+                const { supabaseAdmin } = await import('@/lib/supabase');
                 const buffer = await media.arrayBuffer();
                 const fileName = `${Date.now()}_${media.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
                 
-                const { data, error } = await supabase.storage.from('complaints').upload(fileName, buffer, {
+                const { data, error } = await supabaseAdmin.storage.from('complaints').upload(fileName, buffer, {
                     contentType: media.type,
                 });
                 
-                if (!error && data) {
-                    const { data: publicData } = supabase.storage.from('complaints').getPublicUrl(data.path);
+                if (error) {
+                    console.error('Storage upload error:', error);
+                } else if (data) {
+                    const { data: publicData } = supabaseAdmin.storage.from('complaints').getPublicUrl(data.path);
                     body.media_paths = [publicData.publicUrl];
                 }
             }
@@ -316,20 +327,17 @@ export async function POST(request: NextRequest) {
 
         const { media_paths, ...complaintData } = parsed.data;
 
-        // ââ Auto Department Routing ââââââââââââââââââââââââââââââââââââââââââ
+        // ── Auto Department Routing ───────────────────────────────────────
         const routing = routeComplaint({
             category:    parsed.data.category as ComplaintCategory,
             zone:        parsed.data.zone as CampusZone,
-            severity:    parsed.data.severity as ComplaintSeverity,
+            severity:    'MODERATE' as ComplaintSeverity,
             isEmergency: parsed.data.is_emergency,
             priority:    parsed.data.is_emergency ? 'EMERGENCY' : 'MODERATE',
         });
 
-        // Compute priority from severity and emergency flag
-        const severityToPriority: Record<string, string> = {
-            LOW: 'LOW', MODERATE: 'MODERATE', HIGH: 'HIGH', CRITICAL: 'CRITICAL'
-        };
-        const computedPriority = parsed.data.is_emergency ? 'EMERGENCY' : (severityToPriority[parsed.data.severity] || 'MODERATE');
+        // Priority is now only determined by emergency flag
+        const computedPriority = parsed.data.is_emergency ? 'EMERGENCY' : 'MODERATE';
 
         // Insert complaint with department assignment
         const { data: complaint, error: insertErr } = await supabase
@@ -353,6 +361,7 @@ export async function POST(request: NextRequest) {
 
         // Attach media if provided
         if (media_paths.length > 0) {
+            const { supabaseAdmin } = await import('@/lib/supabase');
             const mediaRows = media_paths.map((urlOrPath: string) => ({
                 complaint_id:   complaint.id,
                 storage_path:   urlOrPath,
@@ -362,7 +371,10 @@ export async function POST(request: NextRequest) {
                 is_after:       false,
                 uploaded_by_id: session.userId,
             }));
-            await supabase.from('complaint_media').insert(mediaRows);
+            const { error: mediaErr } = await supabaseAdmin.from('complaint_media').insert(mediaRows);
+            if (mediaErr) {
+                console.error('Media insert error:', mediaErr);
+            }
         }
 
         // Notify all admins if emergency

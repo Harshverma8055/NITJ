@@ -6,7 +6,7 @@ import { Upload, X, AlertTriangle, MapPin, FileText, Eye, CheckCircle, RefreshCw
 import { CATEGORY_LABELS, ZONE_LABELS } from '@/lib/complaints';
 import type { ComplaintCategory, CampusZone, ComplaintSeverity } from '@/lib/complaints';
 
-const STEPS = ['Category & Severity', 'Location', 'Details', 'Evidence', 'Review & Submit'];
+const STEPS = ['Category', 'Location', 'Details', 'Evidence', 'Review & Submit'];
 
 interface FormState {
     category:     ComplaintCategory | '';
@@ -25,7 +25,7 @@ interface FormState {
 }
 
 const INITIAL: FormState = {
-    category: '', severity: '', zone: '', building: '', floor: '',
+    category: '', severity: 'MODERATE', zone: '', building: '', floor: '',
     room: '', title: '', description: '', is_anonymous: false,
     is_emergency: false, media_paths: [],
 };
@@ -211,30 +211,7 @@ export default function ComplaintForm() {
                             </select>
                         </div>
 
-                        <div>
-                            <label style={labelStyle}>Severity Level *</label>
-                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 10 }}>
-                                {(['LOW','MODERATE','HIGH','CRITICAL'] as ComplaintSeverity[]).map(s => {
-                                    const colors: Record<string, string> = { LOW: '#22c55e', MODERATE: '#f59e0b', HIGH: '#f97316', CRITICAL: '#ef4444' };
-                                    const descs: Record<string, string> = { LOW: 'Minor inconvenience', MODERATE: 'Affects daily use', HIGH: 'Major disruption', CRITICAL: 'Dangerous condition' };
-                                    return (
-                                        <div
-                                            key={s}
-                                            onClick={() => update('severity', s)}
-                                            style={{
-                                                padding: '12px 16px', borderRadius: 'var(--radius-md)', cursor: 'pointer',
-                                                border: form.severity === s ? `2px solid ${colors[s]}` : '1px solid var(--border-color)',
-                                                background: form.severity === s ? `${colors[s]}15` : 'var(--bg-glass)',
-                                                transition: 'all 0.2s',
-                                            }}
-                                        >
-                                            <div style={{ fontWeight: 700, color: colors[s], fontSize: 14 }}>{s}</div>
-                                            <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{descs[s]}</div>
-                                        </div>
-                                    );
-                                })}
-                            </div>
-                        </div>
+
                     </div>
                 )}
 
@@ -389,9 +366,10 @@ export default function ComplaintForm() {
                         >
                             <Upload size={32} color="var(--text-muted)" />
                             <span style={{ color: 'var(--text-secondary)', fontSize: 14, textAlign: 'center' }}>
-                                Drop files here or <strong style={{ color: '#6366f1' }}>click to browse</strong>
+                                <strong style={{ color: '#6366f1' }}>📷 Take Photo / Upload from Gallery</strong>
                                 <br />
                                 <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>
+                                    On mobile: Camera or Gallery · On desktop: Browse files<br/>
                                     {previews.length}/5 files added
                                 </span>
                             </span>
@@ -442,7 +420,6 @@ export default function ComplaintForm() {
                         </h2>
                         {[
                             ['Category', CATEGORY_LABELS[form.category as ComplaintCategory] ?? form.category],
-                            ['Severity', form.severity],
                             ['Zone', ZONE_LABELS[form.zone as CampusZone] ?? form.zone],
                             ['Location', [form.building, form.floor, form.room].filter(Boolean).join(' · ') || 'Not specified'],
                             ['Title', form.title],

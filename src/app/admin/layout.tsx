@@ -50,7 +50,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
     const navItems = [
         { name: 'Dashboard', path: '/admin/dashboard', icon: LayoutDashboard },
-        { name: 'Students', path: '/admin/students', icon: Users },
+        { name: 'User Directory', path: '/admin/users', icon: Users },
         { name: 'Campus Issues', path: '/admin/complaints', icon: PenTool },
         { name: 'Departments', path: '/admin/departments', icon: Building2 },
         { name: 'Announcements', path: '/admin/announcements', icon: Megaphone },
@@ -136,14 +136,14 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                             display: 'flex', alignItems: 'center', justifyContent: 'center',
                             fontWeight: 'bold', fontSize: 14
                         }}>
-                            GA
+                            {user?.name ? user.name.split(' ').map((n: string) => n[0]).join('').substring(0, 2).toUpperCase() : 'AD'}
                         </div>
                         <div style={{ flex: 1, overflow: 'hidden' }}>
-                            <div style={{ fontSize: 13, fontWeight: 600, color: 'white', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                                Gabbar Admin
+                            <div style={{ fontSize: 13, fontWeight: 600, color: 'white', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={user?.name}>
+                                {user?.name || 'Admin'}
                             </div>
                             <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', letterSpacing: 0.5 }}>
-                                ADMINISTRATOR
+                                {user?.role || 'ADMINISTRATOR'}
                             </div>
                         </div>
                     </div>
