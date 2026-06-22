@@ -13,8 +13,9 @@ function ComplaintsContent() {
     const initialDept = searchParams.get('dept') || 'ALL';
     const initialFilter = searchParams.get('filter') || 'Pending';
 
-    const [complaints, setComplaints] = useState([]);
-    const [loading, setLoading] = useState(true);
+    const [complaints, setComplaints] = useState<any[]>([]);
+    const [initialLoad, setInitialLoad] = useState(true);
+    const [isFetching, setIsFetching] = useState(false);
     const [filter, setFilter] = useState(initialFilter);
     const [selectedDept, setSelectedDept] = useState(initialDept);
     const [counts, setCounts] = useState<Record<string, number>>({
@@ -43,7 +44,7 @@ function ComplaintsContent() {
             fetch(`/api/complaints?limit=1&status=APPROVED,ASSIGNED,IN_PROGRESS${deptParam}`).then(res => res.json()),
             fetch(`/api/complaints?limit=1&status=RESOLVED${deptParam}`).then(res => res.json()),
             fetch(`/api/complaints?limit=1&status=APPROVED,ASSIGNED,IN_PROGRESS,RESOLVED${deptParam}`).then(res => res.json()),
-            fetch(`/api/complaints?limit=1&is_emergency=true&status=APPROVED,ASSIGNED,IN_PROGRESS,PENDING_REVIEW${deptParam}`).then(res => res.json()),
+            fetch(`/api/complaints?limit=1&is_emergency=true&status=PENDING_REVIEW,APPROVED,ASSIGNED,IN_PROGRESS${deptParam}`).then(res => res.json()),
         ]).then(([pendingData, activeData, resolvedData, allData, emergencyData]) => {
             setCounts({
                 'Pending': pendingData.total || 0,
@@ -56,7 +57,7 @@ function ComplaintsContent() {
     };
 
     useEffect(() => {
-        setLoading(true);
+        setIsFetching(true);
         let statusParam = '';
         let emergencyParam = '';
         if (filter === 'Pending') {
@@ -83,14 +84,18 @@ function ComplaintsContent() {
             .then(data => {
                 const valid = (data.complaints || []).filter((c: any) => c.category !== 'ANNOUNCEMENT');
                 setComplaints(valid);
-                setLoading(false);
+                setInitialLoad(false);
+                setIsFetching(false);
             })
-            .catch(() => setLoading(false));
+            .catch(() => {
+                setInitialLoad(false);
+                setIsFetching(false);
+            });
 
         fetchCounts(selectedDept);
     }, [filter, selectedDept]);
 
-    if (loading) return <div style={{ display: 'flex', justifyContent: 'center', padding: 100 }}><div className="spinner"></div></div>;
+    if (initialLoad) return <div style={{ display: 'flex', justifyContent: 'center', padding: 100 }}><div className="spinner"></div></div>;
 
     const filtered = complaints.filter((c: any) => {
         // Status filter
@@ -162,7 +167,10 @@ function ComplaintsContent() {
                 </div>
 
                 {/* Department Dropdown Selector */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                    <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.4)', background: 'rgba(255,255,255,0.05)', padding: '6px 12px', borderRadius: 8 }}>
+                        {isFetching ? <span style={{ color: '#f59e0b', fontWeight: 600 }}>Updating...</span> : <span>Total: <strong>{filtered.length}</strong></span>}
+                    </div>
                     <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.5)', fontWeight: 600 }}>Department:</span>
                     <select
                         value={selectedDept}

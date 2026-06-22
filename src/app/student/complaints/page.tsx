@@ -7,13 +7,14 @@ import { Plus, Clock, CheckCircle, AlertTriangle, Filter, Search, MapPin, User, 
 export default function ComplaintsPage() {
     const router = useRouter();
     const [complaints, setComplaints] = useState<any[]>([]);
-    const [loading, setLoading] = useState(true);
+    const [initialLoad, setInitialLoad] = useState(true);
+    const [isFetching, setIsFetching] = useState(false);
     const [statusFilter, setStatusFilter] = useState<string>('ALL_ACTIVE');
     const [votingIds, setVotingIds] = useState<Record<string, boolean>>({});
     const [sortBy, setSortBy] = useState<string>('latest');
 
     const fetchComplaints = (status?: string, sort: string = 'latest') => {
-        setLoading(true);
+        setIsFetching(true);
         const params = new URLSearchParams({ limit: '50', sort: sort });
         if (status === 'MY_COMPLAINTS') {
             params.set('my_only', 'true');
@@ -29,9 +30,13 @@ export default function ComplaintsPage() {
                     list = list.filter((c: any) => c.status !== 'RESOLVED');
                 }
                 setComplaints(list);
-                setLoading(false);
+                setInitialLoad(false);
+                setIsFetching(false);
             })
-            .catch(() => setLoading(false));
+            .catch(() => {
+                setInitialLoad(false);
+                setIsFetching(false);
+            });
     };
 
     const handleVote = async (e: React.MouseEvent, id: string) => {
@@ -157,8 +162,9 @@ export default function ComplaintsPage() {
 
             {/* Complaints Count & Sort */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, flexWrap: 'wrap', gap: 12 }}>
-                <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.4)' }}>
-                    Showing <strong style={{ color: 'rgba(255,255,255,0.7)' }}>{complaints.length}</strong> issue{complaints.length !== 1 ? 's' : ''}
+                <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.4)', display: 'flex', alignItems: 'center', gap: 12 }}>
+                    <span>Showing <strong style={{ color: 'rgba(255,255,255,0.7)' }}>{complaints.length}</strong> issue{complaints.length !== 1 ? 's' : ''}</span>
+                    {isFetching && <span style={{ color: '#a5b4fc', fontSize: 12, fontWeight: 600 }}>Updating...</span>}
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13 }}>
                     <span style={{ color: 'rgba(255,255,255,0.4)' }}>Sort by:</span>
@@ -200,10 +206,10 @@ export default function ComplaintsPage() {
             </div>
 
             {/* List */}
-            {loading ? (
+            {initialLoad ? (
                 <div style={{ display: 'flex', justifyContent: 'center', marginTop: 60 }}><div className="spinner"></div></div>
             ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 16, opacity: isFetching ? 0.6 : 1, transition: 'opacity 0.2s' }}>
                     {complaints.length === 0 ? (
                         <div style={{ background: 'rgba(255,255,255,0.02)', padding: 40, borderRadius: 16, textAlign: 'center', color: 'rgba(255,255,255,0.4)', border: '1px dashed rgba(255,255,255,0.1)' }}>
                             No issues found for this filter.
