@@ -9,11 +9,15 @@ export async function POST(req: NextRequest) {
         if (newPassword.length < 6) return NextResponse.json({ error: 'Password must be at least 6 characters' }, { status: 400 });
 
         const supabase = getSupabase();
-        const { data: resetRecord } = await supabase
+        const { data: resetRecord, error: dbError } = await supabase
             .from('password_reset_tokens')
             .select('user_id, expires_at, used')
             .eq('token', token)
             .single();
+
+        if (dbError) {
+            console.error('Error querying password reset token:', dbError);
+        }
 
         if (!resetRecord) return NextResponse.json({ error: 'Invalid or expired reset link. Please request a new one.' }, { status: 400 });
         if (resetRecord.used) return NextResponse.json({ error: 'This reset link has already been used.' }, { status: 400 });

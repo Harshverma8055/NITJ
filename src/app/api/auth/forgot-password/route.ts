@@ -119,12 +119,17 @@ export async function POST(req: NextRequest) {
             .eq('used', false);
 
         // Store new token
-        await supabase.from('password_reset_tokens').insert({
+        const { error: dbError } = await supabase.from('password_reset_tokens').insert({
             user_id: user.id,
             token,
             expires_at: expiresAt.toISOString(),
             used: false,
         });
+
+        if (dbError) {
+            console.error('Failed to store reset token in database:', dbError);
+            return NextResponse.json({ error: 'Database error occurred. Please make sure the password_reset_tokens table exists.' }, { status: 500 });
+        }
 
         // Build the reset URL
         const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
