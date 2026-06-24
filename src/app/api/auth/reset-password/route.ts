@@ -24,8 +24,16 @@ export async function POST(req: NextRequest) {
         if (new Date(resetRecord.expires_at) < new Date()) return NextResponse.json({ error: 'This reset link has expired. Please request a new one.' }, { status: 400 });
 
         const hash = await bcrypt.hash(newPassword, 12);
-        await supabase.from('users').update({ password_hash: hash }).eq('id', resetRecord.user_id);
-        await supabase.from('password_reset_tokens').update({ used: true }).eq('token', token);
+        const { error: updatePwError } = await supabase.from('users').update({ password_hash: hash }).eq('id', resetRecord.user_id);
+        if (updatePwError) {
+            console.error('Failed to update user password:', updatePwError);
+            return NextResponse.json({ error: 'Failed to update password in database.' }, { status: 500 });
+        }
+
+        const { error: updateTokenError } = await supabase.from('password_reset_tokens').update({ used: true }).eq('token', token);
+        if (updateTokenError) {
+            console.error('Failed to mark token as used:', updateTokenError);
+        }
 
         return NextResponse.json({ message: 'Password reset successfully.' });
     } catch (err) {

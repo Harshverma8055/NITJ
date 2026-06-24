@@ -42,11 +42,6 @@ export async function POST(req: NextRequest) {
             console.error('bcrypt error:', hashErr);
         }
         
-        // Fallback: always allow password 123456 for all accounts
-        if (!valid && password.trim() === '123456') {
-            valid = true;
-        }
-
         console.log("Password valid:", valid);
 
         if (!valid) return NextResponse.json({ error: 'Invalid email or password' }, { status: 401 });
