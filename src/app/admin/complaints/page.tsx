@@ -124,53 +124,52 @@ function ComplaintsContent() {
                 </p>
             </div>
 
-            {/* Filters Row */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 16, marginBottom: 32, flexWrap: 'wrap' }}>
-                {/* Status Tabs */}
-                <div style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 8 }}>
-                    {[
-                        { id: 'Pending', label: 'Pending' },
-                        { id: 'Emergencies', label: '🚨 Emergencies' },
-                        { id: 'Active', label: 'Active' },
-                        { id: 'Resolved', label: 'Resolved' },
-                        { id: 'All Complaints', label: 'All Complaints' }
-                    ].map(tab => {
-                        const isActive = filter === tab.id;
-                        const count = counts[tab.id] || 0;
-                        return (
-                            <button 
-                                key={tab.id}
-                                onClick={() => {
-                                    setFilter(tab.id);
-                                    let nextDept = selectedDept;
-                                    if (tab.id === 'Pending') {
-                                        setSelectedDept('ALL');
-                                        nextDept = 'ALL';
-                                    }
-                                    updateParams(tab.id, nextDept);
-                                }}
-                                style={{ 
-                                    background: isActive ? '#f59e0b' : 'transparent', 
-                                    color: isActive ? 'black' : 'rgba(255,255,255,0.5)', 
-                                    border: 'none', padding: '8px 20px', borderRadius: 20, 
-                                    fontSize: 13, fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap',
-                                    display: 'flex', alignItems: 'center', gap: 8
-                                }}
-                            >
-                                <span>{tab.label}</span>
-                                <span style={{ 
-                                    background: isActive ? 'rgba(0,0,0,0.15)' : 'rgba(255,255,255,0.1)', 
-                                    color: isActive ? 'black' : 'rgba(255,255,255,0.7)', 
-                                    padding: '2px 8px', borderRadius: 10, fontSize: 11, fontWeight: 700 
-                                }}>
-                                    {count}
-                                </span>
-                            </button>
-                        );
-                    })}
-                </div>
+            {/* Status Tabs */}
+            <div style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 8, marginBottom: 20 }}>
+                {[
+                    { id: 'Pending', label: 'Pending' },
+                    { id: 'Emergencies', label: '🚨 Emergencies' },
+                    { id: 'Active', label: 'Active' },
+                    { id: 'Resolved', label: 'Resolved' },
+                    { id: 'All Complaints', label: 'All Complaints' }
+                ].map(tab => {
+                    const isActive = filter === tab.id;
+                    const count = counts[tab.id] || 0;
+                    return (
+                        <button 
+                            key={tab.id}
+                            onClick={() => {
+                                setFilter(tab.id);
+                                let nextDept = selectedDept;
+                                if (tab.id === 'Pending') {
+                                    setSelectedDept('ALL');
+                                    nextDept = 'ALL';
+                                }
+                                updateParams(tab.id, nextDept);
+                            }}
+                            style={{ 
+                                background: isActive ? '#f59e0b' : 'transparent', 
+                                color: isActive ? 'black' : 'rgba(255,255,255,0.5)', 
+                                border: 'none', padding: '8px 20px', borderRadius: 20, 
+                                fontSize: 13, fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap',
+                                display: 'flex', alignItems: 'center', gap: 8
+                            }}
+                        >
+                            <span>{tab.label}</span>
+                            <span style={{ 
+                                background: isActive ? 'rgba(0,0,0,0.15)' : 'rgba(255,255,255,0.1)', 
+                                color: isActive ? 'black' : 'rgba(255,255,255,0.7)', 
+                                padding: '2px 8px', borderRadius: 10, fontSize: 11, fontWeight: 700 
+                            }}>
+                                {count}
+                            </span>
+                        </button>
+                    );
+                })}
+            </div>
 
-                {/* Department Dropdown Selector */}
+            {/* Filter Controls Row */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 16, marginBottom: 32, flexWrap: 'wrap' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'nowrap', overflowX: 'auto', paddingBottom: 4 }}>
                     <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.4)', background: 'rgba(255,255,255,0.05)', padding: '6px 12px', borderRadius: 8, display: 'flex', alignItems: 'center', gap: 8, whiteSpace: 'nowrap' }}>
                         <span>Total: <strong>{filtered.length}</strong></span>
