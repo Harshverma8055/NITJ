@@ -16,12 +16,14 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
         const supabase = getSupabase();
         
         const isOfficial = session.role === 'ADMIN' || session.role === 'MAINTENANCE';
+        const isInternal = isOfficial ? !!body.is_internal : false;
 
         const { data, error } = await supabase.from('complaint_comments').insert({
             complaint_id: id,
             author_user_id: session.userId,
             content: body.content.trim(),
             is_official: isOfficial,
+            is_internal: isInternal,
         }).select().single();
 
         if (error) {

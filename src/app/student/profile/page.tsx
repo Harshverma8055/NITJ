@@ -1,23 +1,15 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import useSWR from 'swr';
 import { ShieldCheck, User, MapPin, Mail, GraduationCap, Activity, Award, LogOut } from 'lucide-react';
 
+const fetcher = (url: string) => fetch(url).then(r => { if (!r.ok) throw new Error(); return r.json(); });
+
 export default function ProfilePage() {
-    const [student, setStudent] = useState<any>(null);
-    const [loading, setLoading] = useState(true);
+    const { data, isLoading } = useSWR('/api/auth/me', fetcher);
+    const student = data?.student || null;
 
-    useEffect(() => {
-        fetch('/api/auth/me')
-            .then(res => res.json())
-            .then(data => {
-                if (data.student) setStudent(data.student);
-                setLoading(false);
-            })
-            .catch(() => setLoading(false));
-    }, []);
-
-    if (loading) return <div style={{ display: 'flex', justifyContent: 'center', marginTop: 100 }}><div className="spinner"></div></div>;
+    if (isLoading) return <div style={{ display: 'flex', justifyContent: 'center', marginTop: 100 }}><div className="spinner"></div></div>;
     if (!student) return <div style={{ textAlign: 'center', color: 'white', marginTop: 100 }}>Profile not found</div>;
 
     const initials = student.user?.name ? student.user.name.substring(0, 2).toUpperCase() : 'ST';

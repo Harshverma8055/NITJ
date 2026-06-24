@@ -2,8 +2,11 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { AlertTriangle, Wrench, CheckCircle, Clock, UserPlus, Zap, Image as ImageIcon, MapPin, MessageCircle, Eye, ThumbsUp } from 'lucide-react';
+import useSWR from 'swr';
 import { getSLATimeLeft, PRIORITY_LABELS, STATUS_LABELS, ZONE_LABELS, getPriorityColor, getStatusColor, getCategoryIcon } from '@/lib/complaints';
 import type { ComplaintListItem } from '@/lib/complaints';
+
+const fetcher = (url: string) => fetch(url).then(r => { if (!r.ok) throw new Error(); return r.json(); });
 
 export default function MaintenanceHistory() {
     const [complaints, setComplaints] = useState<ComplaintListItem[]>([]);
@@ -16,38 +19,47 @@ export default function MaintenanceHistory() {
     const [myId, setMyId]             = useState<string | null>(null);
     const [role, setRole]             = useState<string | null>(null);
 
-    const load = useCallback(async () => {
-        setLoading(true);
-        let deptCode: string | null = null;
-        let staffId: string | null = null;
+    // Auth from SWR cache (instant — already fetched by layout)
+    const { data: authData } = useSWR('/api/auth/me', fetcher);
 
-        const meRes = await fetch('/api/auth/me');
-        if (meRes.ok) {
-            const meData = await meRes.json();
-            if (meData.user) {
-                setRole(meData.user.role);
-                deptCode = meData.user.maintenanceDept || null;
-                staffId = meData.user.maintenanceId || null;
-                setUserDept(deptCode);
-                setMyId(staffId);
-            }
-        }
-
+    const fetchComplaints = useCallback(async () => {
+        const deptCode = authData?.user?.maintenanceDept || null;
         const deptParam = deptCode ? `&department=${encodeURIComponent(deptCode)}` : '';
-        const res = await fetch(`/api/complaints?sort=latest&limit=50&status=APPROVED,ASSIGNED${deptParam}`);
-        const data = await res.json();
         
-        const res2 = await fetch(`/api/complaints?sort=latest&limit=50&status=IN_PROGRESS${deptParam}`);
-        const data2 = await res2.json();
+        const [res, res2, res3] = await Promise.all([
+            fetch(`/api/complaints?sort=latest&limit=50&status=APPROVED,ASSIGNED${deptParam}`),
+            fetch(`/api/complaints?sort=latest&limit=50&status=IN_PROGRESS${deptParam}`),
+            fetch(`/api/complaints?sort=resolved_at&limit=50&status=RESOLVED${deptParam}`)
+        ]);
 
-        const res3 = await fetch(`/api/complaints?sort=resolved_at&limit=50&status=RESOLVED${deptParam}`);
-        const data3 = await res3.json();
+        const [data, data2, data3] = await Promise.all([res.json(), res2.json(), res3.json()]);
         
-        setComplaints([...(data.complaints ?? []), ...(data2.complaints ?? []), ...(data3.complaints ?? [])]);
-        setLoading(false);
-    }, []);
+        return {
+            complaints: [...(data.complaints ?? []), ...(data2.complaints ?? []), ...(data3.complaints ?? [])],
+            role: authData?.user?.role || null,
+            userDept: deptCode,
+            myId: authData?.user?.maintenanceId || null
+        };
+    }, [authData]);
 
-    useEffect(() => { load(); }, [load]);
+    const { data: swrData, mutate } = useSWR(
+        authData ? '/maintenance/history/data' : null,
+        fetchComplaints
+    );
+
+    useEffect(() => {
+        if (swrData) {
+            setRole(swrData.role);
+            setUserDept(swrData.userDept);
+            setMyId(swrData.myId);
+            setComplaints(swrData.complaints);
+            setLoading(false);
+        }
+    }, [swrData]);
+
+    const load = useCallback(async () => {
+        await mutate();
+    }, [mutate]);
 
     async function uploadFile(file: File): Promise<string | null> {
         const fd = new FormData();
@@ -262,9 +274,11 @@ export default function MaintenanceHistory() {
                                             <span style={{ display: 'flex', alignItems: 'center', gap: 5, color: 'var(--text-muted)', fontSize: 13 }} title={`${c.upvote_count ?? 0} Upvotes`}>
                                                 <ThumbsUp size={14} /> {c.upvote_count ?? 0}
                                             </span>
-                                            <span style={{ display: 'flex', alignItems: 'center', gap: 5, color: 'var(--text-muted)', fontSize: 13 }} title={`${c.comment_count} Comments`}>
-                                                <MessageCircle size={14} /> {c.comment_count}
-                                            </span>
+                                            {c.comment_count > 0 && (
+                                                <span style={{ display: 'flex', alignItems: 'center', gap: 5, color: 'var(--text-muted)', fontSize: 13 }} title={`${c.comment_count} Comments`}>
+                                                    <MessageCircle size={14} /> {c.comment_count}
+                                                </span>
+                                            )}
                                         </div>
                                         <div style={{ display: 'flex', alignItems: 'center', gap: 5, color: 'var(--text-muted)', fontSize: 12 }}>
                                             <Clock size={12} />

@@ -1,8 +1,12 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import Link from 'next/link';
+import useSWR from 'swr';
 import { useRouter, usePathname } from 'next/navigation';
 import { LayoutDashboard, AlertTriangle, Users, User, Info, LogOut, Shield } from 'lucide-react';
+
+const fetcher = (url: string) => fetch(url).then(r => { if (!r.ok) throw new Error('Not logged in'); return r.json(); });
 
 export default function StudentLayout({ children }: { children: React.ReactNode }) {
     const router = useRouter();
@@ -10,15 +14,19 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const [user, setUser] = useState<any>(null);
 
+    const { data: authData, error } = useSWR('/api/auth/me', fetcher);
+
     useEffect(() => {
-        fetch('/api/auth/me')
-            .then(r => { if (!r.ok) throw new Error(); return r.json(); })
-            .then(data => {
-                if (data.user) setUser({ ...data.user, student: data.student });
-                else router.push('/login');
-            })
-            .catch(() => router.push('/login'));
-    }, [router]);
+        if (error) {
+            router.push('/login');
+        } else if (authData) {
+            if (authData.user) {
+                setUser({ ...authData.user, student: authData.student });
+            } else {
+                router.push('/login');
+            }
+        }
+    }, [authData, error, router]);
 
     const navItems = [
         { name: 'Dashboard', path: '/student/dashboard', icon: LayoutDashboard },
@@ -63,23 +71,23 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
                     {navItems.map(item => {
                         const active = pathname === item.path || pathname.startsWith(item.path + '/');
                         return (
-                            <button
+                            <Link
                                 key={item.name}
+                                href={item.path}
                                 className={`nav-link ${active ? 'student-active active' : ''}`}
-                                onClick={() => router.push(item.path)}
                                 style={{
                                     display: 'flex', alignItems: 'center', gap: 12,
                                     padding: '12px 24px', width: '100%',
                                     background: active ? 'rgba(16, 185, 129, 0.1)' : 'transparent',
                                     color: active ? '#10b981' : 'rgba(255,255,255,0.6)',
-                                    border: 'none', borderLeftWidth: 3, borderLeftStyle: 'solid',
+                                    borderLeftWidth: 3, borderLeftStyle: 'solid',
                                     borderLeftColor: active ? '#10b981' : 'transparent',
-                                    cursor: 'pointer', textAlign: 'left',
+                                    textDecoration: 'none', textAlign: 'left',
                                     transition: 'all 0.2s', fontSize: 14, fontWeight: 500
                                 }}
                             >
                                 <item.icon size={18} /> {item.name}
-                            </button>
+                            </Link>
                         );
                     })}
                 </nav>

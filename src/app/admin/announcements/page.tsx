@@ -3,9 +3,16 @@
 import { useState, useEffect } from 'react';
 import { Megaphone, Plus, Trash2, X, AlertCircle, Paperclip, FileText, Download } from 'lucide-react';
 
+import useSWR from 'swr';
+
+const fetcher = (url: string) => fetch(url).then(res => res.json());
+
 export default function AnnouncementsPage() {
-    const [announcements, setAnnouncements] = useState<any[]>([]);
-    const [loading, setLoading] = useState(true);
+    const { data, error, isLoading: loading, mutate: fetchAnnouncements } = useSWR('/api/admin/announcements', fetcher, {
+        keepPreviousData: true
+    });
+    const announcements = data?.announcements || [];
+
     const [showModal, setShowModal] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     
@@ -17,21 +24,6 @@ export default function AnnouncementsPage() {
         content: '',
         attachment: null as File | null
     });
-
-    useEffect(() => {
-        fetchAnnouncements();
-    }, []);
-
-    const fetchAnnouncements = async () => {
-        setLoading(true);
-        try {
-            const res = await fetch('/api/admin/announcements');
-            const data = await res.json();
-            setAnnouncements(data.announcements || []);
-        } finally {
-            setLoading(false);
-        }
-    };
 
     const handleCreate = async (e: React.FormEvent) => {
         e.preventDefault();

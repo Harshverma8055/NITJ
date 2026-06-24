@@ -51,8 +51,22 @@ export default function StudentComplaintDetail({ params }: { params: Promise<{ i
     }, [successVisible]);
 
     async function handleVote() {
-        if (!data || voting) return;
-        setVoting(true);
+        if (!data) return;
+
+        const currentlyVoted = data.has_voted;
+        const nextVoted = !currentlyVoted;
+        const nextCount = currentlyVoted
+            ? Math.max(0, (data.upvote_count ?? 0) - 1)
+            : (data.upvote_count ?? 0) + 1;
+
+        const originalData = data;
+
+        setData((prev: AnyRecord) => ({
+            ...prev,
+            has_voted: nextVoted,
+            upvote_count: nextCount,
+        }));
+
         try {
             const res = await fetch(`/api/complaints/${id}/vote`, { method: 'POST' });
             const d = await res.json();
@@ -62,9 +76,12 @@ export default function StudentComplaintDetail({ params }: { params: Promise<{ i
                     has_voted: d.voted,
                     upvote_count: d.upvote_count,
                 }));
+            } else {
+                setData(originalData);
             }
-        } finally {
-            setVoting(false);
+        } catch (err) {
+            console.error(err);
+            setData(originalData);
         }
     }
 
@@ -120,7 +137,7 @@ export default function StudentComplaintDetail({ params }: { params: Promise<{ i
             <p style={{ color: 'var(--text-muted)', marginBottom: 24 }}>
                 {error || 'This complaint does not exist or you do not have access to it.'}
             </p>
-            <button onClick={() => router.push('/student/complaints')} className="btn btn-primary">
+            <button onClick={() => router.push(`/student/complaints?${new URLSearchParams(window.location.search).toString()}`)} className="btn btn-primary">
                 ← Back to Complaints
             </button>
         </div>
@@ -286,12 +303,11 @@ export default function StudentComplaintDetail({ params }: { params: Promise<{ i
                 <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', paddingTop: 16, borderTop: '1px solid var(--border-color)' }}>
                     <button
                         onClick={handleVote}
-                        disabled={voting}
                         style={{
                             display: 'flex', alignItems: 'center', gap: 6, padding: '8px 16px',
                             background: data.has_voted ? '#6366f120' : 'var(--bg-glass)',
                             border: data.has_voted ? '1px solid #6366f1' : '1px solid var(--border-color)',
-                            borderRadius: 20, cursor: voting ? 'not-allowed' : 'pointer',
+                            borderRadius: 20, cursor: 'pointer',
                             color: data.has_voted ? '#6366f1' : 'var(--text-secondary)',
                             fontSize: 13, fontWeight: 600, transition: 'all 0.2s',
                         }}
@@ -348,7 +364,7 @@ export default function StudentComplaintDetail({ params }: { params: Promise<{ i
                                     {comment.is_official ? '🏛️ Official' : ''} {comment.author?.name || 'User'}
                                 </span>
                                 <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>
-                                    {new Date(comment.created_at).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
+                                    {new Date(comment.created_at).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })}
                                 </span>
                             </div>
                             <p style={{ margin: 0, fontSize: 14, color: 'var(--text-secondary)', lineHeight: 1.6 }}>{comment.content}</p>

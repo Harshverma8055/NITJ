@@ -2,11 +2,15 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
+import Link from 'next/link';
+import useSWR from 'swr';
 import { 
     LayoutDashboard, Users, UserCheck, AlertTriangle, PenTool, 
     Building2, FileDigit, Megaphone, QrCode, LineChart, 
     FileKey, Info, LogOut, Shield
 } from 'lucide-react';
+
+const fetcher = (url: string) => fetch(url).then(r => { if (!r.ok) throw new Error('Not logged in'); return r.json(); });
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
     const router = useRouter();
@@ -14,39 +18,43 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     const [user, setUser] = useState<any>(null);
     const [toastMsg, setToastMsg] = useState<{ id: string; title: string; zone: string } | null>(null);
 
+    const { data: authData, error } = useSWR('/api/auth/me', fetcher);
+
+    useEffect(() => {
+        if (error) router.push('/login');
+    }, [error, router]);
+
     useEffect(() => {
         let subscription: any;
 
-        fetch('/api/auth/me')
-            .then(r => { if (!r.ok) throw new Error(); return r.json(); })
-            .then(async data => {
-                if (data.user && data.user.role === 'ADMIN') {
-                    setUser(data.user);
-                    // Dynamically import supabaseClient to subscribe client-side
-                    const { supabaseClient } = await import('@/lib/supabase');
-                    subscription = supabaseClient
-                        .channel('admin-complaints')
-                        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'complaints' }, payload => {
-                            if (payload.new.status === 'PENDING_REVIEW') {
-                                setToastMsg({
-                                    id: payload.new.id,
-                                    title: payload.new.title,
-                                    zone: payload.new.zone || 'Unknown Zone'
-                                });
-                                // Auto dismiss after 8s
-                                setTimeout(() => setToastMsg(null), 8000);
-                            }
-                        })
-                        .subscribe();
-                }
-                else router.push('/login');
-            })
-            .catch(() => router.push('/login'));
+        const setupSubscription = async () => {
+            if (authData && authData.user && authData.user.role === 'ADMIN') {
+                setUser(authData.user);
+                const { supabaseClient } = await import('@/lib/supabase');
+                subscription = supabaseClient
+                    .channel('admin-complaints')
+                    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'complaints' }, payload => {
+                        if (payload.new.status === 'PENDING_REVIEW') {
+                            setToastMsg({
+                                id: payload.new.id,
+                                title: payload.new.title,
+                                zone: payload.new.zone || 'Unknown Zone'
+                            });
+                            setTimeout(() => setToastMsg(null), 8000);
+                        }
+                    })
+                    .subscribe();
+            } else if (authData && (!authData.user || authData.user.role !== 'ADMIN')) {
+                router.push('/login');
+            }
+        };
+
+        setupSubscription();
             
         return () => {
             if (subscription) subscription.unsubscribe();
         };
-    }, [router]);
+    }, [authData, router]);
 
     const navItems = [
         { name: 'Dashboard', path: '/admin/dashboard', icon: LayoutDashboard },
@@ -89,17 +97,17 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                     {navItems.map(item => {
                         const active = pathname === item.path || pathname.startsWith(item.path + '/');
                         return (
-                            <button
+                            <Link
                                 key={item.name}
+                                href={item.path}
                                 className="nav-link"
-                                onClick={() => router.push(item.path)}
                                 style={{
                                     display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                                     background: active ? 'rgba(245, 158, 11, 0.1)' : 'transparent',
                                     color: active ? '#f59e0b' : 'rgba(255,255,255,0.6)',
-                                    border: 'none', borderLeftWidth: 3, borderLeftStyle: 'solid',
+                                    borderLeftWidth: 3, borderLeftStyle: 'solid',
                                     borderLeftColor: active ? '#f59e0b' : 'transparent',
-                                    cursor: 'pointer', textAlign: 'left',
+                                    textDecoration: 'none', textAlign: 'left',
                                     transition: 'all 0.2s', fontSize: 14, fontWeight: 500
                                 }}
                                 onMouseEnter={e => {
@@ -118,7 +126,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                                 <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                                     <item.icon size={18} /> <span className="nav-text">{item.name}</span>
                                 </div>
-                            </button>
+                            </Link>
                         );
                     })}
                 </nav>

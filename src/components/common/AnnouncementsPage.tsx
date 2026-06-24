@@ -3,6 +3,8 @@
 import { useState, useEffect } from 'react';
 import { Megaphone, AlertCircle, FileText, Download, Clock } from 'lucide-react';
 
+import useSWR from 'swr';
+
 interface Announcement {
     id: string;
     title: string;
@@ -16,30 +18,19 @@ interface Announcement {
     created_at: string;
 }
 
+const fetcher = (url: string) => fetch(url).then(res => res.json());
+
 export default function AnnouncementsPage({ title, role }: { title: string, role: string }) {
-    const [announcements, setAnnouncements] = useState<Announcement[]>([]);
-    const [loading, setLoading] = useState(true);
+    const { data, error, isLoading } = useSWR('/api/announcements', fetcher, {
+        keepPreviousData: true
+    });
 
     useEffect(() => {
-        fetchAnnouncements();
         // Clear unread badge
         localStorage.setItem('last_seen_announcements', new Date().toISOString());
     }, []);
 
-    const fetchAnnouncements = async () => {
-        try {
-            const res = await fetch('/api/announcements');
-            const data = await res.json();
-            
-            if (data.announcements) {
-                setAnnouncements(data.announcements);
-            }
-        } catch (err) {
-            console.error('Failed to fetch announcements:', err);
-        } finally {
-            setLoading(false);
-        }
-    };
+    const announcements: Announcement[] = data?.announcements || [];
 
     const getColor = (type: string) => {
         if (type === 'ACADEMIC') return '#f59e0b';
@@ -49,7 +40,7 @@ export default function AnnouncementsPage({ title, role }: { title: string, role
         return '#3b82f6';
     };
 
-    if (loading) return <div style={{ display: 'flex', justifyContent: 'center', marginTop: 100 }}><div className="spinner"></div></div>;
+    if (isLoading && !data) return <div style={{ display: 'flex', justifyContent: 'center', marginTop: 100 }}><div className="spinner"></div></div>;
 
     return (
         <div style={{ maxWidth: 900, margin: '0 auto', color: 'white', paddingBottom: 60 }}>

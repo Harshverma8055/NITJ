@@ -20,41 +20,47 @@ export async function GET(req: NextRequest) {
 
         if (!student) return NextResponse.json({ error: 'Student not found' }, { status: 404 });
 
-        const { data: complaints } = await supabase
-            .from('complaints')
-            .select('id, title, category, zone, severity, status, is_emergency, created_at')
-            .eq('reporter_student_id', student.id)
-            .order('created_at', { ascending: false })
-            .limit(5);
-
-        // 2. Get Leaderboard (Top 3 Students by rating/pulse)
-        const { data: leaderboard } = await supabase
-            .from('students')
-            .select('id, rating, roll_number, users:user_id(name)')
-            .order('rating', { ascending: false })
-            .limit(3);
-
-        // 3. Get Recent Announcements (from complaints table)
-        const { data: announcements } = await supabase
-            .from('complaints')
-            .select('id, title, content:description, severity:is_emergency, created_at, reporter_student_id, users:reporter_student_id(name)')
-            .eq('category', 'ANNOUNCEMENT')
-            .in('building', ['ALL', 'STUDENTS']) // Audience filter
-            .order('created_at', { ascending: false })
-            .limit(3);
-
-        // Count how many students have a higher rating to compute rank
-        const { count: higherRankCount } = await supabase
-            .from('students')
-            .select('*', { count: 'exact', head: true })
-            .gt('rating', student.rating || 0);
+        // Run all independent queries in parallel (none depend on each other)
+        const [
+            { data: complaints },
+            { data: leaderboard },
+            { data: announcements },
+            { count: higherRankCount },
+            { count: totalStudentsCount }
+        ] = await Promise.all([
+            // Student's complaints
+            supabase
+                .from('complaints')
+                .select('id, title, category, zone, severity, status, is_emergency, created_at')
+                .eq('reporter_student_id', student.id)
+                .order('created_at', { ascending: false })
+                .limit(5),
+            // Leaderboard (Top 3)
+            supabase
+                .from('students')
+                .select('id, rating, roll_number, users:user_id(name)')
+                .order('rating', { ascending: false })
+                .limit(3),
+            // Announcements
+            supabase
+                .from('complaints')
+                .select('id, title, content:description, severity:is_emergency, created_at, reporter_student_id, users:reporter_student_id(name)')
+                .eq('category', 'ANNOUNCEMENT')
+                .in('building', ['ALL', 'STUDENTS'])
+                .order('created_at', { ascending: false })
+                .limit(3),
+            // Rank (how many have higher rating)
+            supabase
+                .from('students')
+                .select('*', { count: 'exact', head: true })
+                .gt('rating', student.rating || 0),
+            // Total students count
+            supabase
+                .from('students')
+                .select('*', { count: 'exact', head: true })
+        ]);
 
         const currentRank = (higherRankCount || 0) + 1;
-
-        // Count total number of students
-        const { count: totalStudentsCount } = await supabase
-            .from('students')
-            .select('*', { count: 'exact', head: true });
 
         return NextResponse.json({
             student: { ...student, user: student.users },

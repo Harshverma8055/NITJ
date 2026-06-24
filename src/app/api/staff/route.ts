@@ -5,18 +5,21 @@ export async function GET() {
     try {
         const supabase = getSupabase();
         
-        // Fetch users who are staff
-        const { data: users, error: usersError } = await supabase
-            .from('users')
-            .select('id, name, email, role')
-            .in('role', ['MAINTENANCE', 'FACULTY', 'ADMIN']);
+        // Fetch users who are staff and their maintenance staff details in parallel
+        const [
+            { data: users, error: usersError },
+            { data: maintenanceStaff, error: maintenanceError }
+        ] = await Promise.all([
+            supabase
+                .from('users')
+                .select('id, name, email, role')
+                .in('role', ['MAINTENANCE', 'FACULTY', 'ADMIN']),
+            supabase
+                .from('maintenance_staff')
+                .select('*')
+        ]);
 
         if (usersError) throw usersError;
-
-        // Fetch their specific details if they are maintenance
-        const { data: maintenanceStaff, error: maintenanceError } = await supabase
-            .from('maintenance_staff')
-            .select('*');
 
         if (maintenanceError && maintenanceError.code !== '42P01') {
             console.error(maintenanceError);

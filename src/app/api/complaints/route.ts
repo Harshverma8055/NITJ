@@ -53,10 +53,14 @@ export async function GET(request: NextRequest) {
         const offset = (query.page - 1) * query.limit;
 
         let studentId: string | null = null;
+        let studentPromise: any = Promise.resolve(null);
         if (session.role === 'STUDENT') {
-            const { data: s } = await supabase
+            studentPromise = supabase
                 .from('students').select('id').eq('user_id', session.userId).maybeSingle();
-            studentId = s?.id ?? null;
+            if (query.my_only === 'true') {
+                const { data: s } = await studentPromise;
+                studentId = s?.id ?? null;
+            }
         }
 
         // Build base query
@@ -68,6 +72,10 @@ export async function GET(request: NextRequest) {
                 upvote_count, comment_count, sla_deadline, sla_breached,
                 created_at, reporter_student_id, assigned_staff_id, assigned_department_code,
                 gps_lat, gps_lng,
+                students (
+                    roll_number,
+                    users (name)
+                ),
                 complaint_media(public_url, is_before, media_type)
             `, { count: 'exact' })
             .neq('category', 'ANNOUNCEMENT');
@@ -135,10 +143,23 @@ export async function GET(request: NextRequest) {
 
         dbQuery = dbQuery.range(offset, offset + query.limit - 1);
 
-        const { data: rows, error, count } = await dbQuery;
-        if (error) {
-            console.error('Complaints list error:', error);
-            return NextResponse.json({ error: 'Failed to fetch complaints' }, { status: 500 });
+        let rows: any[] | null = null;
+        let count: number | null = null;
+
+        if (session.role === 'STUDENT' && query.my_only !== 'true') {
+            const [studentRes, complaintsRes] = await Promise.all([
+                studentPromise,
+                dbQuery
+            ]);
+            studentId = studentRes?.data?.id ?? null;
+            rows = complaintsRes.data;
+            count = complaintsRes.count;
+            if (complaintsRes.error) throw complaintsRes.error;
+        } else {
+            const { data, error, count: cCount } = await dbQuery;
+            if (error) throw error;
+            rows = data;
+            count = cCount;
         }
 
         // Get student vote status
@@ -153,34 +174,11 @@ export async function GET(request: NextRequest) {
             votedSet = new Set((votes ?? []).map((v: Record<string, unknown>) => v.complaint_id as string));
         }
 
-        // Get reporter names (skip anonymous)
-        const reporterIds: string[] = [];
-        (rows ?? []).forEach((r: Record<string, unknown>) => {
-            if (!r.is_anonymous && r.reporter_student_id) reporterIds.push(r.reporter_student_id as string);
-        });
-        const reporterMap: Record<string, { name: string; rollNumber?: string }> = {};
-        if (reporterIds.length) {
-            const { data: reporters } = await supabase
-                .from('students').select('id, user_id, roll_number').in('id', reporterIds);
-            const userIds = (reporters ?? []).map((r: Record<string, unknown>) => r.user_id as string);
-            if (userIds.length) {
-                const { data: users } = await supabase
-                    .from('users').select('id, name').in('id', userIds);
-                const uMap: Record<string, string> = {};
-                (users ?? []).forEach((u: Record<string, unknown>) => { uMap[u.id as string] = u.name as string; });
-                (reporters ?? []).forEach((r: Record<string, unknown>) => {
-                    reporterMap[r.id as string] = {
-                        name: uMap[r.user_id as string] ?? 'Student',
-                        rollNumber: r.roll_number as string | undefined
-                    };
-                });
-            }
-        }
-
-        const complaints = (rows ?? []).map((r: Record<string, unknown>) => {
+        const complaints = (rows ?? []).map((r: Record<string, any>) => {
             const media = (r.complaint_media as Array<Record<string, unknown>>) ?? [];
             const beforeImg = media.find(m => m.is_before && m.media_type === 'IMAGE');
             const afterImg = media.find(m => m.is_after && m.media_type === 'IMAGE');
+            const reporterData = r.students as any;
             return {
                 id:            r.id,
                 title:         r.title,
@@ -205,8 +203,10 @@ export async function GET(request: NextRequest) {
                 has_voted:     votedSet.has(r.id as string),
                 thumbnail:     beforeImg?.public_url ?? null,
                 after_thumbnail: afterImg?.public_url ?? null,
-                reporter:      r.is_anonymous ? null
-                    : reporterMap[r.reporter_student_id as string] || { name: 'Student' },
+                reporter:      r.is_anonymous ? null : {
+                    name: reporterData?.users?.name || 'Student',
+                    rollNumber: reporterData?.roll_number
+                },
             };
         });
 

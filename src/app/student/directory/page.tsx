@@ -3,38 +3,30 @@
 import { useState, useEffect } from 'react';
 import { Search, MapPin, User, Star, Award, ChevronRight, GraduationCap } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import useSWR from 'swr';
+
+const fetcher = (url: string) => fetch(url).then(r => r.json());
 
 export default function StudentDirectoryPage() {
     const router = useRouter();
-    const [students, setStudents] = useState<any[]>([]);
-    const [staff, setStaff] = useState<any[]>([]);
-    const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState('');
     const [deptFilter, setDeptFilter] = useState('All Depts');
     const [yearFilter, setYearFilter] = useState('All Years');
     const [viewMode, setViewMode] = useState<'students' | 'staff'>('students');
-    const [visibleCount, setVisibleCount] = useState(24);
+    const [visibleCount, setVisibleCount] = useState(20);
     const [sortByPulse, setSortByPulse] = useState(false);
-    const [currentUserRollNumber, setCurrentUserRollNumber] = useState<string | null>(null);
+
+    // Auth from SWR cache (instant — already fetched by layout)
+    const { data: authData } = useSWR('/api/auth/me', fetcher);
+    const currentUserRollNumber = authData?.student?.roll_number || null;
+
+    // Students data with SWR caching
+    const { data: studentData, isLoading } = useSWR('/api/students', fetcher);
+    const students: any[] = studentData?.students || [];
+    const staff: any[] = [];
 
     const DEPARTMENTS = ['All Depts', 'BT', 'ChE', 'CE', 'CSE', 'DSE', 'EE', 'ECE', 'IPE', 'IT', 'ICE', 'MnC', 'ME', 'TT'];
     const YEARS = ['All Years', 'Year 1', 'Year 2', 'Year 3', 'Year 4'];
-
-    useEffect(() => {
-        fetch('/api/auth/me')
-            .then(res => res.json())
-            .then(data => {
-                if (data.student) {
-                    setCurrentUserRollNumber(data.student.roll_number);
-                }
-            })
-            .catch(() => {});
-
-        fetch('/api/students').then(r => r.json()).then((studentData) => {
-            if (studentData.students) setStudents(studentData.students);
-            setLoading(false);
-        }).catch(() => setLoading(false));
-    }, []);
 
     // Helper to get initials
     const getInitials = (name: string) => {
@@ -86,7 +78,7 @@ export default function StudentDirectoryPage() {
     });
 
     useEffect(() => {
-        setVisibleCount(24);
+        setVisibleCount(20);
     }, [search, deptFilter, yearFilter]);
 
     return (
@@ -200,7 +192,7 @@ export default function StudentDirectoryPage() {
             </div>
 
             {/* Table */}
-            {loading ? (
+            {isLoading ? (
                 <div style={{ textAlign: 'center', padding: '40px 0' }}><div className="spinner"></div></div>
             ) : (
                 <div style={{ background: '#13151A', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 16, overflow: 'hidden' }}>
@@ -281,7 +273,7 @@ export default function StudentDirectoryPage() {
                     {visibleCount < sortedData.length && (
                         <div style={{ padding: '16px 24px', borderTop: '1px solid rgba(255,255,255,0.05)', textAlign: 'center' }}>
                             <button 
-                                onClick={() => setVisibleCount(v => v + 24)}
+                                onClick={() => setVisibleCount(v => v + 20)}
                                 style={{
                                     background: 'transparent', border: 'none', color: '#60a5fa',
                                     fontSize: 13, fontWeight: 600, cursor: 'pointer'

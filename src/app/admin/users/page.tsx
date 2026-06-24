@@ -1,7 +1,10 @@
 'use client';
 
-import { useEffect, useState, useMemo } from 'react';
-import { useRouter } from 'next/navigation';
+import { useEffect, useState, useMemo, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import useSWR from 'swr';
+
+const fetcher = (url: string) => fetch(url).then(res => res.json());
 import { Users, Search, RefreshCw, Edit2, Key, Trash2, MapPin, Star, Plus, ChevronDown } from 'lucide-react';
 
 interface Student {
@@ -45,20 +48,26 @@ const DEPARTMENT_OPTIONS = [
     { code: 'LIBRARY_TECH', name: 'Library Technical Support', shortName: 'Library Tech', color: '#0891b2' },
 ];
 
-export default function AdminUsersPage() {
+function AdminUsersContent() {
     const router = useRouter();
-    const [viewMode, setViewMode] = useState<'students' | 'staff'>('students');
-    
-    // Data states
-    const [students, setStudents] = useState<Student[]>([]);
-    const [staff, setStaff] = useState<Staff[]>([]);
-    const [loading, setLoading] = useState(true);
+    const searchParams = useSearchParams();
+
+    // Read initial states from URL query parameters
+    const initialViewMode = (searchParams.get('view') as 'students' | 'staff') || 'students';
+    const initialSearch = searchParams.get('q') || '';
+    const initialDept = searchParams.get('dept') || 'All Departments';
+    const initialYear = searchParams.get('year') || 'All';
+    const initialRole = searchParams.get('role') || 'All Roles';
+    const initialPage = parseInt(searchParams.get('page') || '1', 10);
+
+    const [viewMode, setViewMode] = useState<'students' | 'staff'>(initialViewMode);
     
     // Filters
-    const [searchQuery, setSearchQuery] = useState('');
-    const [deptFilter, setDeptFilter] = useState('All Departments');
-    const [yearFilter, setYearFilter] = useState('All');
-    const [roleFilter, setRoleFilter] = useState('All Roles');
+    const [searchQuery, setSearchQuery] = useState(initialSearch);
+    const [deptFilter, setDeptFilter] = useState(initialDept);
+    const [yearFilter, setYearFilter] = useState(initialYear);
+    const [roleFilter, setRoleFilter] = useState(initialRole);
+    const [page, setPage] = useState(initialPage);
 
     // Modals
     const [editingUser, setEditingUser] = useState<any>(null);
@@ -67,42 +76,58 @@ export default function AdminUsersPage() {
     const [actionLoading, setActionLoading] = useState(false);
     const [newPassword, setNewPassword] = useState('');
 
-    const fetchUsers = async () => {
-        setLoading(true);
-        try {
-            const [studentRes, staffRes] = await Promise.all([
-                fetch('/api/admin/students'),
-                fetch('/api/staff')
-            ]);
-            
-            if (studentRes.ok) {
-                const sData = await studentRes.json();
-                if (sData.students) setStudents(sData.students);
-            }
-            if (staffRes.ok) {
-                const stData = await staffRes.json();
-                if (stData.staff) {
-                    const mappedStaff = stData.staff.map((s: any) => ({
-                        id: s.id,
-                        name: s.user?.name || 'Unknown',
-                        email: s.user?.email || 'No Email',
-                        role: s.role,
-                        department: s.department || 'General',
-                        department_code: s.department_code || ''
-                    }));
-                    setStaff(mappedStaff);
-                }
-            }
-        } catch (error) {
-            console.error('Error fetching users:', error);
-        } finally {
-            setLoading(false);
-        }
+    // Fetch data using useSWR
+    const { data: studentsData, error: studentsError, isLoading: studentsLoading, mutate: mutateStudents } = useSWR('/api/admin/students', fetcher, {
+        keepPreviousData: true,
+        revalidateOnFocus: false,
+    });
+    const { data: staffData, error: staffError, isLoading: staffLoading, mutate: mutateStaff } = useSWR('/api/staff', fetcher, {
+        keepPreviousData: true,
+        revalidateOnFocus: false,
+    });
+
+    const students = studentsData?.students || [];
+    const staffRaw = staffData?.staff || [];
+    const staff = useMemo(() => {
+        return staffRaw.map((s: any) => ({
+            id: s.id,
+            name: s.user?.name || 'Unknown',
+            email: s.user?.email || 'No Email',
+            role: s.role,
+            department: s.department || 'General',
+            department_code: s.department_code || ''
+        }));
+    }, [staffRaw]);
+
+    const loading = studentsLoading || staffLoading;
+
+    // Triggered after edits / deletes
+    const fetchUsers = () => {
+        mutateStudents();
+        mutateStaff();
     };
 
+    // Sync search params when they change (back/forward history)
     useEffect(() => {
-        fetchUsers();
-    }, []);
+        setViewMode((searchParams.get('view') as 'students' | 'staff') || 'students');
+        setSearchQuery(searchParams.get('q') || '');
+        setDeptFilter(searchParams.get('dept') || 'All Departments');
+        setYearFilter(searchParams.get('year') || 'All');
+        setRoleFilter(searchParams.get('role') || 'All Roles');
+        setPage(parseInt(searchParams.get('page') || '1', 10));
+    }, [searchParams]);
+
+    const updateParams = (updates: Record<string, string | number>) => {
+        const nextParams = new URLSearchParams(window.location.search);
+        Object.entries(updates).forEach(([key, val]) => {
+            if (val === undefined || val === null || val === '') {
+                nextParams.delete(key);
+            } else {
+                nextParams.set(key, val.toString());
+            }
+        });
+        router.replace(`?${nextParams.toString()}`, { scroll: false });
+    };
 
     const handleEditSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -195,28 +220,28 @@ export default function AdminUsersPage() {
     };
 
     // Filter computation
-    const studentDepartments = useMemo(() => {
-        const set = new Set(students.map(s => getMappedDept(s.dept)));
+    const studentDepartments: string[] = useMemo(() => {
+        const set = new Set<string>(students.map((s: Student) => getMappedDept(s.dept)));
         return ['All Departments', ...Array.from(set).sort()];
     }, [students]);
 
-    const studentYears = useMemo(() => {
-        const set = new Set(students.map(s => s.year));
+    const studentYears: string[] = useMemo(() => {
+        const set = new Set<string>(students.map((s: Student) => s.year));
         return ['All', ...Array.from(set).sort()];
     }, [students]);
 
-    const staffDepartments = useMemo(() => {
-        const set = new Set(staff.map(s => s.department));
+    const staffDepartments: string[] = useMemo(() => {
+        const set = new Set<string>(staff.map((s: Staff) => s.department));
         return ['All Departments', ...Array.from(set).sort()];
     }, [staff]);
 
-    const staffRoles = useMemo(() => {
-        const set = new Set(staff.map(s => s.role));
+    const staffRoles: string[] = useMemo(() => {
+        const set = new Set<string>(staff.map((s: Staff) => s.role));
         return ['All Roles', ...Array.from(set).sort()];
     }, [staff]);
 
     const filteredStudents = useMemo(() => {
-        return students.filter(s => {
+        return students.filter((s: Student) => {
             const mappedDept = getMappedDept(s.dept);
             const searchLower = searchQuery.toLowerCase();
             
@@ -227,11 +252,11 @@ export default function AdminUsersPage() {
             const matchesDept = deptFilter === 'All Departments' || mappedDept === deptFilter;
             const matchesYear = yearFilter === 'All' || s.year === yearFilter;
             return matchesSearch && matchesDept && matchesYear;
-        }).sort((a, b) => (a.roll || '').localeCompare(b.roll || ''));
+        }).sort((a: Student, b: Student) => (a.roll || '').localeCompare(b.roll || ''));
     }, [students, searchQuery, deptFilter, yearFilter]);
 
     const filteredStaff = useMemo(() => {
-        return staff.filter(s => {
+        return staff.filter((s: Staff) => {
             const searchLower = searchQuery.toLowerCase();
             const matchesSearch = s.name.toLowerCase().includes(searchLower) || 
                                   s.email.toLowerCase().includes(searchLower) ||
@@ -239,7 +264,7 @@ export default function AdminUsersPage() {
             const matchesDept = deptFilter === 'All Departments' || s.department === deptFilter;
             const matchesRole = roleFilter === 'All Roles' || s.role === roleFilter;
             return matchesSearch && matchesDept && matchesRole;
-        }).sort((a, b) => {
+        }).sort((a: Staff, b: Staff) => {
             if (a.role === b.role) {
                 return a.name.localeCompare(b.name);
             }
@@ -250,6 +275,20 @@ export default function AdminUsersPage() {
             return a.role.localeCompare(b.role);
         });
     }, [staff, searchQuery, deptFilter, roleFilter]);
+
+    const ITEMS_PER_PAGE = 50;
+
+    const totalStudentPages = Math.ceil(filteredStudents.length / ITEMS_PER_PAGE) || 1;
+    const paginatedStudents = useMemo(() => {
+        const start = (page - 1) * ITEMS_PER_PAGE;
+        return filteredStudents.slice(start, start + ITEMS_PER_PAGE);
+    }, [filteredStudents, page]);
+
+    const totalStaffPages = Math.ceil(filteredStaff.length / ITEMS_PER_PAGE) || 1;
+    const paginatedStaff = useMemo(() => {
+        const start = (page - 1) * ITEMS_PER_PAGE;
+        return filteredStaff.slice(start, start + ITEMS_PER_PAGE);
+    }, [filteredStaff, page]);
 
     return (
         <div style={{ maxWidth: 1200, margin: '0 auto', color: 'white', paddingBottom: 60 }}>
@@ -280,7 +319,13 @@ export default function AdminUsersPage() {
             {/* Toggle Students/Staff */}
             <div style={{ display: 'flex', gap: 8, marginBottom: 24, borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: 16 }}>
                 <button 
-                    onClick={() => { setViewMode('students'); setDeptFilter('All Departments'); setSearchQuery(''); }}
+                    onClick={() => { 
+                        setViewMode('students'); 
+                        setDeptFilter('All Departments'); 
+                        setSearchQuery(''); 
+                        setPage(1);
+                        updateParams({ view: 'students', dept: 'All Departments', q: '', page: 1, year: 'All', role: 'All Roles' });
+                    }}
                     style={{
                         background: viewMode === 'students' ? 'rgba(99, 102, 241, 0.1)' : 'transparent',
                         color: viewMode === 'students' ? '#818cf8' : 'rgba(255,255,255,0.6)',
@@ -291,7 +336,13 @@ export default function AdminUsersPage() {
                     Students ({students.length})
                 </button>
                 <button 
-                    onClick={() => { setViewMode('staff'); setDeptFilter('All Departments'); setSearchQuery(''); }}
+                    onClick={() => { 
+                        setViewMode('staff'); 
+                        setDeptFilter('All Departments'); 
+                        setSearchQuery(''); 
+                        setPage(1);
+                        updateParams({ view: 'staff', dept: 'All Departments', q: '', page: 1, year: 'All', role: 'All Roles' });
+                    }}
                     style={{
                         background: viewMode === 'staff' ? 'rgba(99, 102, 241, 0.1)' : 'transparent',
                         color: viewMode === 'staff' ? '#818cf8' : 'rgba(255,255,255,0.6)',
@@ -323,7 +374,11 @@ export default function AdminUsersPage() {
                             type="text" 
                             placeholder={viewMode === 'students' ? "Search students by name, email, roll..." : "Search staff by name, email..."}
                             value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
+                            onChange={(e) => {
+                                setSearchQuery(e.target.value);
+                                setPage(1);
+                                updateParams({ q: e.target.value, page: 1 });
+                            }}
                             style={{ 
                                 width: '100%', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.1)', 
                                 color: 'white', padding: '12px 16px 12px 44px', borderRadius: 12, fontSize: 14, outline: 'none'
@@ -337,7 +392,11 @@ export default function AdminUsersPage() {
                     <label style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)', fontWeight: 600 }}>DEPARTMENT</label>
                     <select 
                         value={deptFilter}
-                        onChange={(e) => setDeptFilter(e.target.value)}
+                        onChange={(e) => {
+                            setDeptFilter(e.target.value);
+                            setPage(1);
+                            updateParams({ dept: e.target.value, page: 1 });
+                        }}
                         className="form-select"
                         style={{ width: '100%', fontSize: 14, padding: '12px 36px 12px 16px' }}
                     >
@@ -350,7 +409,11 @@ export default function AdminUsersPage() {
                         <label style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)', fontWeight: 600 }}>YEAR</label>
                         <select 
                             value={yearFilter}
-                            onChange={(e) => setYearFilter(e.target.value)}
+                            onChange={(e) => {
+                                setYearFilter(e.target.value);
+                                setPage(1);
+                                updateParams({ year: e.target.value, page: 1 });
+                            }}
                             className="form-select"
                             style={{ width: '100%', fontSize: 14, padding: '12px 36px 12px 16px' }}
                         >
@@ -362,7 +425,11 @@ export default function AdminUsersPage() {
                         <label style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)', fontWeight: 600 }}>ROLE</label>
                         <select 
                             value={roleFilter}
-                            onChange={(e) => setRoleFilter(e.target.value)}
+                            onChange={(e) => {
+                                setRoleFilter(e.target.value);
+                                setPage(1);
+                                updateParams({ role: e.target.value, page: 1 });
+                            }}
                             className="form-select"
                             style={{ width: '100%', fontSize: 14, padding: '12px 36px 12px 16px' }}
                         >
@@ -408,7 +475,7 @@ export default function AdminUsersPage() {
                             </tr>
                         </thead>
                         <tbody>
-                            {loading ? (
+                             {loading ? (
                                 <tr>
                                     <td colSpan={6} style={{ textAlign: 'center', padding: '40px' }}><div className="spinner" style={{ margin: '0 auto' }}></div></td>
                                 </tr>
@@ -417,13 +484,13 @@ export default function AdminUsersPage() {
                                     <td colSpan={6} style={{ textAlign: 'center', padding: '60px', color: 'rgba(255,255,255,0.4)' }}>No {viewMode} found matching your criteria.</td>
                                 </tr>
                             ) : (
-                                (viewMode === 'students' ? filteredStudents : filteredStaff).map((user: any, i: number) => (
+                                (viewMode === 'students' ? paginatedStudents : paginatedStaff).map((user: any, i: number) => (
                                     <tr key={user.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', transition: 'background 0.2s' }}
                                         onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.02)'}
                                         onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
                                     >
                                         <td style={{ padding: '16px 24px', fontWeight: 700, color: 'rgba(255,255,255,0.4)', fontSize: 13 }}>
-                                            {i + 1}
+                                            {(page - 1) * ITEMS_PER_PAGE + i + 1}
                                         </td>
                                         <td style={{ padding: '16px 24px' }}>
                                             <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
@@ -621,8 +688,87 @@ export default function AdminUsersPage() {
                         <p style={{ color: 'rgba(255,255,255,0.6)', marginBottom: 24, fontSize: 14 }}>Are you sure you want to delete {deletingUser.name}? This action cannot be undone.</p>
                         <div style={{ display: 'flex', gap: 12 }}>
                             <button type="button" onClick={() => setDeletingUser(null)} style={{ flex: 1, padding: '12px', background: 'transparent', border: '1px solid rgba(255,255,255,0.2)', color: 'white', borderRadius: 8, cursor: 'pointer' }}>Cancel</button>
-                            <button type="button" onClick={handleDeleteConfirm} disabled={actionLoading} style={{ flex: 1, padding: '12px', background: '#ef4444', border: 'none', color: 'white', fontWeight: 600, borderRadius: 8, cursor: actionLoading ? 'not-allowed' : 'pointer' }}>{actionLoading ? 'Deleting...' : 'Delete'}</button>
+                                            <button type="button" onClick={handleDeleteConfirm} disabled={actionLoading} style={{ flex: 1, padding: '12px', background: '#ef4444', border: 'none', color: 'white', fontWeight: 600, borderRadius: 8, cursor: actionLoading ? 'not-allowed' : 'pointer' }}>{actionLoading ? 'Deleting...' : 'Delete'}</button>
                         </div>
+                    </div>
+                </div>
+            )}
+                       {/* Pagination Controls */}
+            {!loading && (viewMode === 'students' ? filteredStudents.length : filteredStaff.length) > 0 && (
+                <div style={{ 
+                    display: 'flex', 
+                    justifyContent: 'space-between', 
+                    alignItems: 'center', 
+                    marginTop: 20, 
+                    padding: '12px 24px', 
+                    background: 'rgba(255,255,255,0.01)', 
+                    border: '1px solid rgba(255,255,255,0.05)', 
+                    borderRadius: 12,
+                    fontSize: 13,
+                    color: 'rgba(255,255,255,0.6)'
+                }}>
+                    <div>
+                        Showing{' '}
+                        <strong style={{ color: 'white' }}>
+                            {Math.min((page - 1) * ITEMS_PER_PAGE + 1, (viewMode === 'students' ? filteredStudents.length : filteredStaff.length))}
+                        </strong>
+                        {' '}-{' '}
+                        <strong style={{ color: 'white' }}>
+                            {Math.min(page * ITEMS_PER_PAGE, (viewMode === 'students' ? filteredStudents.length : filteredStaff.length))}
+                        </strong>
+                        {' '}of{' '}
+                        <strong style={{ color: 'white' }}>
+                            {viewMode === 'students' ? filteredStudents.length : filteredStaff.length}
+                        </strong>
+                        {' '}{viewMode}
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                        <button
+                            disabled={page === 1}
+                            onClick={() => {
+                                const nextPage = page - 1;
+                                setPage(nextPage);
+                                updateParams({ page: nextPage });
+                            }}
+                            style={{
+                                background: page === 1 ? 'rgba(255,255,255,0.02)' : 'rgba(255,255,255,0.05)',
+                                color: page === 1 ? 'rgba(255,255,255,0.2)' : 'white',
+                                border: '1px solid rgba(255,255,255,0.1)',
+                                padding: '8px 16px',
+                                borderRadius: 8,
+                                cursor: page === 1 ? 'not-allowed' : 'pointer',
+                                fontWeight: 600,
+                                fontSize: 12,
+                                transition: 'all 0.2s'
+                            }}
+                        >
+                            Previous
+                        </button>
+                        <span>
+                            Page <strong style={{ color: 'white' }}>{page}</strong> of{' '}
+                            <strong style={{ color: 'white' }}>{viewMode === 'students' ? totalStudentPages : totalStaffPages}</strong>
+                        </span>
+                        <button
+                            disabled={page === (viewMode === 'students' ? totalStudentPages : totalStaffPages)}
+                            onClick={() => {
+                                const nextPage = page + 1;
+                                setPage(nextPage);
+                                updateParams({ page: nextPage });
+                            }}
+                            style={{
+                                background: page === (viewMode === 'students' ? totalStudentPages : totalStaffPages) ? 'rgba(255,255,255,0.02)' : 'rgba(255,255,255,0.05)',
+                                color: page === (viewMode === 'students' ? totalStudentPages : totalStaffPages) ? 'rgba(255,255,255,0.2)' : 'white',
+                                border: '1px solid rgba(255,255,255,0.1)',
+                                padding: '8px 16px',
+                                borderRadius: 8,
+                                cursor: page === (viewMode === 'students' ? totalStudentPages : totalStaffPages) ? 'not-allowed' : 'pointer',
+                                fontWeight: 600,
+                                fontSize: 12,
+                                transition: 'all 0.2s'
+                            }}
+                        >
+                            Next
+                        </button>
                     </div>
                 </div>
             )}
@@ -633,5 +779,13 @@ export default function AdminUsersPage() {
                 .spinner { width: 24px; height: 24px; border: 3px solid rgba(255,255,255,0.1); border-radius: 50%; border-top-color: #6366f1; animation: spin 1s ease-in-out infinite; }
             `}</style>
         </div>
+    );
+}
+
+export default function AdminUsersPage() {
+    return (
+        <Suspense fallback={<div style={{ display: 'flex', justifyContent: 'center', marginTop: 100 }}><div className="spinner"></div></div>}>
+            <AdminUsersContent />
+        </Suspense>
     );
 }

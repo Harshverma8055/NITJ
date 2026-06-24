@@ -22,7 +22,7 @@ export async function GET(req: NextRequest) {
         let staffData = null;
         let complaints: any[] = [];
 
-        // If student, get student data and their complaints
+        // If student, run student + complaints queries in parallel
         if (user.role === 'STUDENT') {
             const { data: student } = await supabase
                 .from('students')
@@ -31,15 +31,16 @@ export async function GET(req: NextRequest) {
                 .single();
 
             if (student) {
-                studentData = student;
-                
-                const { data: stdComplaints } = await supabase
-                    .from('complaints')
-                    .select('id, title, category, zone, severity, status, is_emergency, created_at')
-                    .eq('reporter_student_id', student.id)
-                    .order('created_at', { ascending: false })
-                    .limit(5);
-                    
+                // Fire complaints query immediately (don't wait to set studentData first)
+                const [, { data: stdComplaints }] = await Promise.all([
+                    Promise.resolve(studentData = student),
+                    supabase
+                        .from('complaints')
+                        .select('id, title, category, zone, severity, status, is_emergency, created_at')
+                        .eq('reporter_student_id', student.id)
+                        .order('created_at', { ascending: false })
+                        .limit(5)
+                ]);
                 complaints = stdComplaints || [];
             }
         } else if (user.role === 'MAINTENANCE') {

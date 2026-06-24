@@ -2,8 +2,11 @@
 
 import { useEffect, useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { ShieldCheck, MapPin, Zap, AlertTriangle, MessageSquare, Plus, ThumbsUp, Clock } from 'lucide-react';
+import { ShieldCheck, MapPin, Zap, AlertTriangle, MessageSquare, Plus, ThumbsUp, Clock, Loader2 } from 'lucide-react';
 import { DEPARTMENTS } from '@/lib/department-router';
+import useSWR from 'swr';
+
+const fetcher = (url: string) => fetch(url).then(res => res.json());
 
 function ComplaintsContent() {
     const router = useRouter();
@@ -13,18 +16,9 @@ function ComplaintsContent() {
     const initialDept = searchParams.get('dept') || 'ALL';
     const initialFilter = searchParams.get('filter') || 'Pending';
 
-    const [complaints, setComplaints] = useState<any[]>([]);
-    const [initialLoad, setInitialLoad] = useState(true);
-    const [isFetching, setIsFetching] = useState(false);
     const [filter, setFilter] = useState(initialFilter);
     const [selectedDept, setSelectedDept] = useState(initialDept);
-    const [counts, setCounts] = useState<Record<string, number>>({
-        'Pending': 0,
-        'Active': 0,
-        'Resolved': 0,
-        'Emergencies': 0,
-        'All Complaints': 0
-    });
+
 
     // When searchParams change due to soft navigation, update state
     useEffect(() => {
@@ -34,68 +28,75 @@ function ComplaintsContent() {
         if (filt) setFilter(filt);
     }, [searchParams]);
 
-    const fetchCounts = (dept: string) => {
-        let deptParam = '';
-        if (dept !== 'ALL') {
-            deptParam = `&department=${encodeURIComponent(dept)}`;
-        }
-        Promise.all([
+    const updateParams = (newFilter: string, newDept: string) => {
+        const nextParams = new URLSearchParams(window.location.search);
+        nextParams.set('filter', newFilter);
+        nextParams.set('dept', newDept);
+        router.replace(`?${nextParams.toString()}`, { scroll: false });
+    };
+
+    const countFetcher = async (url: string) => {
+        const qs = url.split('?')[1] || '';
+        const deptParam = qs ? `&${qs}` : '';
+        const [pendingData, activeData, resolvedData, allData, emergencyData] = await Promise.all([
             fetch(`/api/complaints?limit=1&status=PENDING_REVIEW${deptParam}`).then(res => res.json()),
             fetch(`/api/complaints?limit=1&status=APPROVED,ASSIGNED,IN_PROGRESS${deptParam}`).then(res => res.json()),
             fetch(`/api/complaints?limit=1&status=RESOLVED${deptParam}`).then(res => res.json()),
             fetch(`/api/complaints?limit=1&status=APPROVED,ASSIGNED,IN_PROGRESS,RESOLVED${deptParam}`).then(res => res.json()),
             fetch(`/api/complaints?limit=1&is_emergency=true&status=PENDING_REVIEW,APPROVED,ASSIGNED,IN_PROGRESS${deptParam}`).then(res => res.json()),
-        ]).then(([pendingData, activeData, resolvedData, allData, emergencyData]) => {
-            setCounts({
-                'Pending': pendingData.total || 0,
-                'Active': activeData.total || 0,
-                'Resolved': resolvedData.total || 0,
-                'All Complaints': allData.total || 0,
-                'Emergencies': emergencyData.total || 0
-            });
-        }).catch(err => console.error("Error fetching status counts", err));
+        ]);
+        return {
+            'Pending': pendingData.total || 0,
+            'Active': activeData.total || 0,
+            'Resolved': resolvedData.total || 0,
+            'All Complaints': allData.total || 0,
+            'Emergencies': emergencyData.total || 0
+        };
     };
 
-    useEffect(() => {
-        setIsFetching(true);
-        let statusParam = '';
-        let emergencyParam = '';
-        if (filter === 'Pending') {
-            statusParam = 'status=PENDING_REVIEW';
-        } else if (filter === 'Active') {
-            statusParam = 'status=APPROVED,ASSIGNED,IN_PROGRESS';
-        } else if (filter === 'Resolved') {
-            statusParam = 'status=RESOLVED';
-        } else if (filter === 'All Complaints') {
-            statusParam = 'status=APPROVED,ASSIGNED,IN_PROGRESS,RESOLVED';
-        } else if (filter === 'Emergencies') {
-            emergencyParam = 'is_emergency=true';
-            statusParam = 'status=PENDING_REVIEW,APPROVED,ASSIGNED,IN_PROGRESS';
-        }
-        
-        let deptParam = '';
-        if (selectedDept !== 'ALL') {
-            deptParam = `&department=${encodeURIComponent(selectedDept)}`;
-        }
-        
-        const url = `/api/complaints?limit=50&sort=latest${statusParam ? `&${statusParam}` : ''}${emergencyParam ? `&${emergencyParam}` : ''}${deptParam}`;
-        fetch(url)
-            .then(res => res.json())
-            .then(data => {
-                const valid = (data.complaints || []).filter((c: any) => c.category !== 'ANNOUNCEMENT');
-                setComplaints(valid);
-                setInitialLoad(false);
-                setIsFetching(false);
-            })
-            .catch(() => {
-                setInitialLoad(false);
-                setIsFetching(false);
-            });
+    const countUrl = selectedDept !== 'ALL' ? `/counts?department=${encodeURIComponent(selectedDept)}` : `/counts`;
+    const { data: countsData } = useSWR(countUrl, countFetcher, { keepPreviousData: true });
+    const counts = (countsData || {
+        'Pending': 0,
+        'Active': 0,
+        'Resolved': 0,
+        'Emergencies': 0,
+        'All Complaints': 0
+    }) as Record<string, number>;
 
-        fetchCounts(selectedDept);
-    }, [filter, selectedDept]);
+    // Build SWR URL for complaints
+    let statusParam = '';
+    let emergencyParam = '';
+    if (filter === 'Pending') {
+        statusParam = 'status=PENDING_REVIEW';
+    } else if (filter === 'Active') {
+        statusParam = 'status=APPROVED,ASSIGNED,IN_PROGRESS';
+    } else if (filter === 'Resolved') {
+        statusParam = 'status=RESOLVED';
+    } else if (filter === 'All Complaints') {
+        statusParam = 'status=APPROVED,ASSIGNED,IN_PROGRESS,RESOLVED';
+    } else if (filter === 'Emergencies') {
+        emergencyParam = 'is_emergency=true';
+        statusParam = 'status=PENDING_REVIEW,APPROVED,ASSIGNED,IN_PROGRESS';
+    }
+    
+    let deptParam = '';
+    if (selectedDept !== 'ALL') {
+        deptParam = `&department=${encodeURIComponent(selectedDept)}`;
+    }
+    
+    const url = `/api/complaints?limit=50&sort=latest${statusParam ? `&${statusParam}` : ''}${emergencyParam ? `&${emergencyParam}` : ''}${deptParam}`;
 
-    if (initialLoad) return <div style={{ display: 'flex', justifyContent: 'center', padding: 100 }}><div className="spinner"></div></div>;
+    const { data, error, isLoading, isValidating } = useSWR(url, fetcher, {
+        keepPreviousData: true
+    });
+
+    let complaints = [];
+    if (data && data.complaints) {
+        complaints = (data.complaints || []).filter((c: any) => c.category !== 'ANNOUNCEMENT');
+    }
+
+    if (isLoading && !data) return <div style={{ display: 'flex', justifyContent: 'center', padding: 100 }}><div className="spinner"></div></div>;
 
     const filtered = complaints.filter((c: any) => {
         // Status filter
@@ -141,9 +142,12 @@ function ComplaintsContent() {
                                 key={tab.id}
                                 onClick={() => {
                                     setFilter(tab.id);
+                                    let nextDept = selectedDept;
                                     if (tab.id === 'Pending') {
                                         setSelectedDept('ALL');
+                                        nextDept = 'ALL';
                                     }
+                                    updateParams(tab.id, nextDept);
                                 }}
                                 style={{ 
                                     background: isActive ? '#f59e0b' : 'transparent', 
@@ -167,14 +171,18 @@ function ComplaintsContent() {
                 </div>
 
                 {/* Department Dropdown Selector */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                    <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.4)', background: 'rgba(255,255,255,0.05)', padding: '6px 12px', borderRadius: 8 }}>
-                        {isFetching ? <span style={{ color: '#f59e0b', fontWeight: 600 }}>Updating...</span> : <span>Total: <strong>{filtered.length}</strong></span>}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'nowrap', overflowX: 'auto', paddingBottom: 4 }}>
+                    <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.4)', background: 'rgba(255,255,255,0.05)', padding: '6px 12px', borderRadius: 8, display: 'flex', alignItems: 'center', gap: 8, whiteSpace: 'nowrap' }}>
+                        <span>Total: <strong>{filtered.length}</strong></span>
+                        <Loader2 size={14} className="spin" style={{ color: '#f59e0b', opacity: isValidating ? 1 : 0, transition: 'opacity 0.2s' }} />
                     </div>
-                    <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.5)', fontWeight: 600 }}>Department:</span>
+                    <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.5)', fontWeight: 600, whiteSpace: 'nowrap' }}>Department:</span>
                     <select
                         value={selectedDept}
-                        onChange={e => setSelectedDept(e.target.value)}
+                        onChange={e => {
+                            setSelectedDept(e.target.value);
+                            updateParams(filter, e.target.value);
+                        }}
                         style={{
                             background: '#13151A',
                             color: 'white',
@@ -209,7 +217,7 @@ function ComplaintsContent() {
                     return (
                         <div 
                             key={c.id} 
-                            onClick={() => router.push(`/admin/complaints/${c.id}`)}
+                            onClick={() => router.push(`/admin/complaints/${c.id}?${new URLSearchParams(window.location.search).toString()}`)}
                             onMouseEnter={e => {
                                 e.currentTarget.style.transform = 'translateY(-4px)';
                                 e.currentTarget.style.boxShadow = isEmergency ? '0 12px 30px rgba(239,68,68,0.15)' : '0 12px 30px rgba(0,0,0,0.4)';
@@ -268,9 +276,11 @@ function ComplaintsContent() {
                                         <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'rgba(255,255,255,0.7)', fontSize: 13, background: 'rgba(255,255,255,0.05)', padding: '6px 12px', borderRadius: 20, fontWeight: 500 }}>
                                             <ThumbsUp size={14} color="#f59e0b" /> <span>{c.upvote_count || 0} Upvotes</span>
                                         </div>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'rgba(255,255,255,0.7)', fontSize: 13, background: 'rgba(255,255,255,0.05)', padding: '6px 12px', borderRadius: 20, fontWeight: 500 }}>
-                                            <MessageSquare size={14} color="#3b82f6" /> <span>{c.comment_count || 0} Comments</span>
-                                        </div>
+                                        {c.comment_count > 0 && (
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'rgba(255,255,255,0.7)', fontSize: 13, background: 'rgba(255,255,255,0.05)', padding: '6px 12px', borderRadius: 20, fontWeight: 500 }}>
+                                                <MessageSquare size={14} color="#3b82f6" /> <span>{c.comment_count} Comments</span>
+                                            </div>
+                                        )}
                                     </div>
                                     <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: 13, display: 'flex', alignItems: 'center', gap: 8 }}>
                                         <div style={{ width: 22, height: 22, borderRadius: '50%', background: '#8b5cf6', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 'bold' }}>

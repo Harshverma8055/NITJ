@@ -1,57 +1,87 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { AlertTriangle, Wrench, CheckCircle, Clock, UserPlus, Zap, Image as ImageIcon, MapPin, MessageCircle, Eye, ThumbsUp } from 'lucide-react';
+import useSWR from 'swr';
 import { getSLATimeLeft, PRIORITY_LABELS, STATUS_LABELS, ZONE_LABELS, getPriorityColor, getStatusColor, getCategoryIcon } from '@/lib/complaints';
 import type { ComplaintListItem } from '@/lib/complaints';
 import NotificationBell from '@/components/common/NotificationBell';
 
+const authFetcher = (url: string) => fetch(url).then(r => { if (!r.ok) throw new Error(); return r.json(); });
 
-export default function MaintenanceDashboard() {
+function MaintenanceDashboardContent() {
+    const router = useRouter();
+    const searchParams = useSearchParams();
+    const initialSort = (searchParams.get('sort') as 'latest' | 'upvotes') || 'latest';
+
     const [complaints, setComplaints] = useState<ComplaintListItem[]>([]);
     const [loading, setLoading]       = useState(true);
     const [updating, setUpdating]     = useState<string | null>(null);
     const [noteMap, setNoteMap]       = useState<Record<string, string>>({});
     const [fileMap, setFileMap]       = useState<Record<string, File>>({});
-    const [sortBy, setSortBy]         = useState<'latest' | 'upvotes'>('latest');
+    const [sortBy, setSortBy]         = useState<'latest' | 'upvotes'>(initialSort);
+
+    // Sync state on navigation back
+    useEffect(() => {
+        const s = searchParams.get('sort');
+        if (s === 'latest' || s === 'upvotes') {
+            setSortBy(s);
+        }
+    }, [searchParams]);
+
+    const updateParams = (newSort: 'latest' | 'upvotes') => {
+        const nextParams = new URLSearchParams(window.location.search);
+        nextParams.set('sort', newSort);
+        router.replace(`?${nextParams.toString()}`, { scroll: false });
+    };
 
 
     const [userDept, setUserDept]     = useState<string | null>(null);
     const [myId, setMyId]             = useState<string | null>(null);
     const [role, setRole]             = useState<string | null>(null);
 
-    const load = useCallback(async () => {
-        setLoading(true);
-        let deptCode: string | null = null;
-        let staffId: string | null = null;
+    // Auth from SWR cache (instant — already fetched by layout)
+    const { data: authData } = useSWR('/api/auth/me', authFetcher);
 
-        const meRes = await fetch('/api/auth/me');
-        if (meRes.ok) {
-            const meData = await meRes.json();
-            if (meData.user) {
-                setRole(meData.user.role);
-                deptCode = meData.user.maintenanceDept || null;
-                staffId = meData.user.maintenanceId || null;
-                setUserDept(deptCode);
-                setMyId(staffId);
-            }
-        }
-
+    const fetchComplaints = useCallback(async () => {
+        const deptCode = authData?.user?.maintenanceDept || null;
         const deptParam = deptCode ? `&department=${encodeURIComponent(deptCode)}` : '';
-        const res = await fetch(`/api/complaints?sort=latest&limit=50&status=APPROVED,ASSIGNED${deptParam}`);
-        const data = await res.json();
         
-        const res2 = await fetch(`/api/complaints?sort=latest&limit=50&status=IN_PROGRESS${deptParam}`);
-        const data2 = await res2.json();
+        const [res, res2, res3] = await Promise.all([
+            fetch(`/api/complaints?sort=latest&limit=50&status=APPROVED,ASSIGNED${deptParam}`),
+            fetch(`/api/complaints?sort=latest&limit=50&status=IN_PROGRESS${deptParam}`),
+            fetch(`/api/complaints?sort=resolved_at&limit=50&status=RESOLVED${deptParam}`)
+        ]);
 
-        const res3 = await fetch(`/api/complaints?sort=resolved_at&limit=50&status=RESOLVED${deptParam}`);
-        const data3 = await res3.json();
+        const [data, data2, data3] = await Promise.all([res.json(), res2.json(), res3.json()]);
         
-        setComplaints([...(data.complaints ?? []), ...(data2.complaints ?? []), ...(data3.complaints ?? [])]);
-        setLoading(false);
-    }, []);
+        return {
+            complaints: [...(data.complaints ?? []), ...(data2.complaints ?? []), ...(data3.complaints ?? [])],
+            role: authData?.user?.role || null,
+            userDept: deptCode,
+            myId: authData?.user?.maintenanceId || null
+        };
+    }, [authData]);
 
-    useEffect(() => { load(); }, [load]);
+    const { data: swrData, error, isLoading, mutate } = useSWR(
+        authData ? '/maintenance/dashboard/data' : null, // Only fetch when auth is ready
+        fetchComplaints
+    );
+
+    useEffect(() => {
+        if (swrData) {
+            setRole(swrData.role);
+            setUserDept(swrData.userDept);
+            setMyId(swrData.myId);
+            setComplaints(swrData.complaints);
+            setLoading(false);
+        }
+    }, [swrData]);
+
+    const load = useCallback(() => {
+        mutate();
+    }, [mutate]);
 
     async function uploadFile(file: File): Promise<string | null> {
         const fd = new FormData();
@@ -206,7 +236,10 @@ export default function MaintenanceDashboard() {
                         <span style={{ fontSize: 13, color: 'var(--text-muted)', fontWeight: 600 }}>Sort by:</span>
                         <div style={{ display: 'flex', gap: 8, background: 'rgba(255, 255, 255, 0.02)', padding: 4, borderRadius: 10, border: '1px solid rgba(255, 255, 255, 0.05)' }}>
                             <button
-                                onClick={() => setSortBy('latest')}
+                                onClick={() => {
+                                    setSortBy('latest');
+                                    updateParams('latest');
+                                }}
                                 style={{
                                     background: sortBy === 'latest' ? 'rgba(6, 182, 212, 0.15)' : 'transparent',
                                     color: sortBy === 'latest' ? '#06b6d4' : 'var(--text-muted)',
@@ -222,7 +255,10 @@ export default function MaintenanceDashboard() {
                                 Latest
                             </button>
                             <button
-                                onClick={() => setSortBy('upvotes')}
+                                onClick={() => {
+                                    setSortBy('upvotes');
+                                    updateParams('upvotes');
+                                }}
                                 style={{
                                     background: sortBy === 'upvotes' ? 'rgba(6, 182, 212, 0.15)' : 'transparent',
                                     color: sortBy === 'upvotes' ? '#06b6d4' : 'var(--text-muted)',
@@ -339,6 +375,14 @@ export default function MaintenanceDashboard() {
     );
 }
 
+export default function MaintenanceDashboard() {
+    return (
+        <Suspense fallback={<div className="loading-container"><div className="spinner" /></div>}>
+            <MaintenanceDashboardContent />
+        </Suspense>
+    );
+}
+
 // Helper component for rendering sections (declared at top-level to prevent losing input focus on state change)
 function Section({ title, subtitle, items, icon, color, renderAction, headerExtra }: {
     title: string; subtitle: string; items: ComplaintListItem[];
@@ -346,6 +390,7 @@ function Section({ title, subtitle, items, icon, color, renderAction, headerExtr
     renderAction: (c: ComplaintListItem) => React.ReactNode;
     headerExtra?: React.ReactNode;
 }) {
+    const router = useRouter();
     if (items.length === 0) return null; // Don't show empty sections to keep UI clean
 
     return (
@@ -391,7 +436,14 @@ function Section({ title, subtitle, items, icon, color, renderAction, headerExtr
                                 )}
                             </div>
 
-                            <a href={`/maintenance/complaints/${c.id}`} style={{ textDecoration: 'none', color: 'inherit', flex: 1, display: 'flex', flexDirection: 'column' }}>
+                            <a 
+                                href={`/maintenance/complaints/${c.id}`} 
+                                onClick={(e) => {
+                                    e.preventDefault();
+                                    router.push(`/maintenance/complaints/${c.id}?${new URLSearchParams(window.location.search).toString()}`);
+                                }}
+                                style={{ textDecoration: 'none', color: 'inherit', flex: 1, display: 'flex', flexDirection: 'column' }}
+                            >
                                 <div style={{ padding: '16px', flex: 1, display: 'flex', flexDirection: 'column', gap: '12px' }}>
                                     {/* Top Row: Emergency indicator + Status */}
                                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -436,9 +488,11 @@ function Section({ title, subtitle, items, icon, color, renderAction, headerExtr
                                             <span style={{ display: 'flex', alignItems: 'center', gap: 5, color: 'var(--text-muted)', fontSize: 13 }} title={`${c.upvote_count ?? 0} Upvotes`}>
                                                 <ThumbsUp size={14} /> {c.upvote_count ?? 0}
                                             </span>
-                                            <span style={{ display: 'flex', alignItems: 'center', gap: 5, color: 'var(--text-muted)', fontSize: 13 }} title={`${c.comment_count} Comments`}>
-                                                <MessageCircle size={14} /> {c.comment_count}
-                                            </span>
+                                            {c.comment_count > 0 && (
+                                                <span style={{ display: 'flex', alignItems: 'center', gap: 5, color: 'var(--text-muted)', fontSize: 13 }} title={`${c.comment_count} Comments`}>
+                                                    <MessageCircle size={14} /> {c.comment_count}
+                                                </span>
+                                            )}
                                         </div>
                                         <div style={{ display: 'flex', alignItems: 'center', gap: 5, color: 'var(--text-muted)', fontSize: 12 }}>
                                             <Clock size={12} />

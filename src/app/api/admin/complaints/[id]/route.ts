@@ -18,6 +18,11 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
                     id, note, new_status, created_at,
                     posted_by_user_id,
                     posted_by:users!posted_by_user_id (name, role)
+                ),
+                complaint_comments(
+                    id, content, is_official, is_internal, is_deleted, created_at,
+                    author_user_id,
+                    author:users!author_user_id (name)
                 )
             `)
             .eq('id', id)
@@ -29,6 +34,14 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
         }
         if (!complaint) {
             return NextResponse.json({ error: 'Complaint not found' }, { status: 404 });
+        }
+
+        // Map comment authors
+        if (complaint.complaint_comments && complaint.complaint_comments.length > 0) {
+            complaint.complaint_comments = complaint.complaint_comments.map((c: any) => ({
+                ...c,
+                author: { name: c.author?.name || 'User' }
+            }));
         }
 
         // Map staff relation nicely

@@ -11,16 +11,21 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 
         const supabase = getSupabase();
 
-        // Get complaint details
+        // Get complaint details with reporter and comment author relations joined
         const { data: complaint, error } = await supabase
             .from('complaints')
             .select(`
                 *,
+                students (
+                    roll_number,
+                    users (name)
+                ),
                 complaint_media(*),
                 complaint_updates(*),
                 complaint_comments(
-                    id, content, is_official, is_deleted, created_at,
-                    author_user_id
+                    id, content, is_official, is_internal, is_deleted, created_at,
+                    author_user_id,
+                    author:users!author_user_id (name)
                 )
             `)
             .eq('id', id)
@@ -30,41 +35,23 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
             return NextResponse.json({ error: 'Complaint not found' }, { status: 404 });
         }
 
-        // Fetch reporter details if not anonymous
-        if (!complaint.is_anonymous && complaint.reporter_student_id) {
-            const { data: reporterObj } = await supabase
-                .from('students')
-                .select('user_id, roll_number')
-                .eq('id', complaint.reporter_student_id)
-                .single();
-
-            if (reporterObj) {
-                const { data: userObj } = await supabase
-                    .from('users')
-                    .select('name')
-                    .eq('id', reporterObj.user_id)
-                    .single();
-
-                complaint.reporter = {
-                    name: userObj?.name || 'Student',
-                    rollNumber: reporterObj.roll_number
-                };
-            }
+        // Map reporter details if not anonymous
+        if (!complaint.is_anonymous && complaint.students) {
+            complaint.reporter = {
+                name: (complaint.students as any)?.users?.name || 'Student',
+                rollNumber: (complaint.students as any)?.roll_number
+            };
         }
 
-        // Fetch comment authors
+        // Map comment authors and exclude internal notes for students
         if (complaint.complaint_comments && complaint.complaint_comments.length > 0) {
-            const userIds = complaint.complaint_comments.map((c: any) => c.author_user_id).filter(Boolean);
-            if (userIds.length > 0) {
-                const { data: users } = await supabase.from('users').select('id, name').in('id', userIds);
-                const userMap: Record<string, string> = {};
-                users?.forEach((u: any) => { userMap[u.id] = u.name; });
-
-                complaint.complaint_comments = complaint.complaint_comments.map((c: any) => ({
+            const isOfficial = session.role === 'ADMIN' || session.role === 'MAINTENANCE';
+            complaint.complaint_comments = complaint.complaint_comments
+                .filter((c: any) => isOfficial || !c.is_internal)
+                .map((c: any) => ({
                     ...c,
-                    author: { name: userMap[c.author_user_id] || 'User' }
+                    author: { name: c.author?.name || 'User' }
                 }));
-            }
         }
 
         return NextResponse.json({ complaint });

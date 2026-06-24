@@ -1,27 +1,18 @@
 'use client';
 
-import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import useSWR from 'swr';
 import { Plus, ShieldCheck, Activity, MapPin, Award, CheckCircle, Clock, AlertTriangle } from 'lucide-react';
 import NotificationBell from '@/components/common/NotificationBell';
 
+const fetcher = (url: string) => fetch(url).then(res => res.json());
+
 export default function StudentDashboard() {
     const router = useRouter();
-    const [data, setData] = useState<any>(null);
-    const [loading, setLoading] = useState(true);
+    const { data, error, isLoading } = useSWR('/api/student/dashboard', fetcher);
 
-    useEffect(() => {
-        fetch('/api/student/dashboard')
-            .then(res => res.json())
-            .then(d => {
-                if (d.student) setData(d);
-                setLoading(false);
-            })
-            .catch(() => setLoading(false));
-    }, []);
-
-    if (loading) return <div style={{ display: 'flex', justifyContent: 'center', marginTop: 100 }}><div className="spinner"></div></div>;
-    if (!data || !data.student) return <div style={{ color: 'white', textAlign: 'center', marginTop: 100 }}>Student profile not found. Please relogin.</div>;
+    if (isLoading) return <div style={{ display: 'flex', justifyContent: 'center', marginTop: 100 }}><div className="spinner"></div></div>;
+    if (error || !data || !data.student) return <div style={{ color: 'white', textAlign: 'center', marginTop: 100 }}>Student profile not found. Please relogin.</div>;
 
     const student = data.student;
     const complaints = data.complaints || [];

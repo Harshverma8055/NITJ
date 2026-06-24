@@ -1,23 +1,14 @@
 'use client';
 
-import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import useSWR from 'swr';
 import { GraduationCap, Users, AlertTriangle, TrendingUp, TrendingDown, Plus, Megaphone } from 'lucide-react';
+
+const fetcher = (url: string) => fetch(url).then(res => res.json());
 
 export default function AdminDashboard() {
     const router = useRouter();
-    const [data, setData] = useState<any>(null);
-    const [loading, setLoading] = useState(true);
-
-    useEffect(() => {
-        fetch('/api/admin/dashboard')
-            .then(res => res.json())
-            .then(d => {
-                setData(d);
-                setLoading(false);
-            })
-            .catch(() => setLoading(false));
-    }, []);
+    const { data, error, isLoading } = useSWR('/api/admin/dashboard', fetcher);
 
     const statsConfig = [
         { title: 'Total Students', value: data?.stats?.totalStudents || 0, icon: <GraduationCap size={20} color="#fbbf24" />, bg: 'rgba(245,158,11,0.1)', border: 'rgba(245,158,11,0.3)' },
@@ -28,7 +19,7 @@ export default function AdminDashboard() {
     const departments = data?.departments || [];
     const recentActivity = data?.recentActivity || [];
 
-    if (loading) return <div style={{ display: 'flex', justifyContent: 'center', padding: 100 }}><div className="spinner"></div></div>;
+    if (isLoading) return <div style={{ display: 'flex', justifyContent: 'center', padding: 100 }}><div className="spinner"></div></div>;
 
     return (
         <div style={{ maxWidth: 1200, margin: '0 auto', color: 'white', paddingBottom: 60 }}>
@@ -65,7 +56,7 @@ export default function AdminDashboard() {
             {/* Quick Actions */}
             <div className="three-col-grid" style={{ marginBottom: 24 }}>
                 <button 
-                    onClick={() => router.push('/admin/students')}
+                    onClick={() => router.push('/admin/users?view=students')}
                     style={{ background: '#8b5cf6', color: 'white', border: 'none', padding: '16px', borderRadius: 12, fontWeight: 600, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, cursor: 'pointer' }}
                 >
                     <Plus size={18} /> Manage Students

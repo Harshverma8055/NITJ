@@ -3,19 +3,13 @@
 import { useEffect, useState } from 'react';
 import { FileKey, Clock, User, CheckCircle, PlusCircle, AlertCircle } from 'lucide-react';
 
-export default function AdminAuditPage() {
-    const [logs, setLogs] = useState<any[]>([]);
-    const [loading, setLoading] = useState(true);
+import useSWR from 'swr';
 
-    useEffect(() => {
-        fetch('/api/admin/audit')
-            .then(res => res.json())
-            .then(data => {
-                if (data.logs) setLogs(data.logs);
-                setLoading(false);
-            })
-            .catch(() => setLoading(false));
-    }, []);
+const fetcher = (url: string) => fetch(url).then(res => res.json());
+
+export default function AdminAuditPage() {
+    const { data, error, isLoading: loading } = useSWR('/api/admin/audit', fetcher, { keepPreviousData: true });
+    const logs = data?.logs || [];
 
     const getActionIcon = (action: string) => {
         if (action.includes('APPROVE')) return <CheckCircle size={16} color="#10b981" />;

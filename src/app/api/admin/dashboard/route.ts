@@ -3,32 +3,51 @@ import { supabaseAdmin } from '@/lib/supabase';
 
 export async function GET() {
     try {
-        // 1. Total Students
-        const { count: totalStudents } = await supabaseAdmin
-            .from('students')
-            .select('*', { count: 'exact', head: true });
+        // Run ALL independent queries in parallel
+        const [
+            { count: totalStudents },
+            { count: totalComplaints },
+            { count: pendingComplaints },
+            { data: deptData },
+            { data: recentComplaints }
+        ] = await Promise.all([
+            // 1. Total Students
+            supabaseAdmin
+                .from('students')
+                .select('*', { count: 'exact', head: true }),
+            // 2. Total Complaints (excludes PENDING_REVIEW and ANNOUNCEMENT)
+            supabaseAdmin
+                .from('complaints')
+                .select('*', { count: 'exact', head: true })
+                .neq('category', 'ANNOUNCEMENT')
+                .not('status', 'eq', 'PENDING_REVIEW'),
+            // 3. Pending Complaints
+            supabaseAdmin
+                .from('complaints')
+                .select('*', { count: 'exact', head: true })
+                .eq('status', 'PENDING_REVIEW')
+                .neq('category', 'ANNOUNCEMENT'),
+            // 4. Department Breakdown
+            supabaseAdmin
+                .from('students')
+                .select('department'),
+            // 5. Recent Activity
+            supabaseAdmin
+                .from('complaints')
+                .select(`
+                    updated_at,
+                    reporter_student_id,
+                    students (
+                        users (name)
+                    ),
+                    status
+                `)
+                .not('reporter_student_id', 'is', null)
+                .order('updated_at', { ascending: false })
+                .limit(6)
+        ]);
 
-        // Removed Total Faculty and Pending Incidents queries
-
-        // 4. Total Complaints (excludes PENDING_REVIEW and ANNOUNCEMENT)
-        const { count: totalComplaints } = await supabaseAdmin
-            .from('complaints')
-            .select('*', { count: 'exact', head: true })
-            .neq('category', 'ANNOUNCEMENT')
-            .not('status', 'eq', 'PENDING_REVIEW');
-
-        // Pending Complaints
-        const { count: pendingComplaints } = await supabaseAdmin
-            .from('complaints')
-            .select('*', { count: 'exact', head: true })
-            .eq('status', 'PENDING_REVIEW')
-            .neq('category', 'ANNOUNCEMENT');
-
-        // 5. Department Breakdown
-        const { data: deptData } = await supabaseAdmin
-            .from('students')
-            .select('department');
-
+        // Compute department breakdown from raw data
         const deptCounts: Record<string, number> = {};
         if (deptData) {
             deptData.forEach(s => {
@@ -37,29 +56,11 @@ export async function GET() {
                 }
             });
         }
-        
         const departments = Object.entries(deptCounts)
             .map(([name, value]) => ({ name, value }))
-            .sort((a, b) => b.value - a.value); // sort by value descending
-            
-        // Calculate max for the progress bar
+            .sort((a, b) => b.value - a.value);
         const maxDept = departments.length > 0 ? departments[0].value : 200;
         const mappedDepartments = departments.map(d => ({ ...d, max: Math.max(maxDept, 1) }));
-
-        // 6. Recent Activity (Derived from recently updated complaints that were approved or resolved)
-        const { data: recentComplaints } = await supabaseAdmin
-            .from('complaints')
-            .select(`
-                updated_at,
-                reporter_student_id,
-                students (
-                    users (name)
-                ),
-                status
-            `)
-            .not('reporter_student_id', 'is', null)
-            .order('updated_at', { ascending: false })
-            .limit(6);
 
         const recentActivity = (recentComplaints || []).map(c => {
             let actionText = 'Submitted Issue';

@@ -1,8 +1,11 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Building2, Search, BarChart3, ShieldCheck, Clock, AlertTriangle, ChevronRight, Activity } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import useSWR from 'swr';
+
+const fetcher = (url: string) => fetch(url).then(res => res.json());
 
 const DEPARTMENTS = [
     { id: 'electrical', name: 'Electrical', head: 'Chief Electrical Engineer', color: '#f59e0b', total: 9, active: 3, resolved: 6, sla: '48h', icon: Activity },
@@ -37,43 +40,31 @@ const DEPT_ID_TO_CODE: Record<string, string> = {
 export default function DepartmentsPage() {
     const router = useRouter();
     const [view, setView] = useState<'grid' | 'table'>('grid');
-    const [departments, setDepartments] = useState(DEPARTMENTS);
-    const [loading, setLoading] = useState(true);
 
-    useEffect(() => {
-        fetch('/api/complaints')
-            .then(res => res.json())
-            .then(data => {
-                const complaints = data.complaints || [];
-                
-                // Map API categories to our departments
-                const updatedDepts = DEPARTMENTS.map(dept => {
-                    let matchingComplaints = [];
-                    if (dept.id === 'electrical') matchingComplaints = complaints.filter((c:any) => c.category === 'ELECTRICAL');
-                    else if (dept.id === 'plumbing') matchingComplaints = complaints.filter((c:any) => c.category === 'PLUMBING');
-                    else if (dept.id === 'hostel') matchingComplaints = complaints.filter((c:any) => c.category === 'HOSTEL');
-                    else if (dept.id === 'network') matchingComplaints = complaints.filter((c:any) => c.category === 'IT_INFRASTRUCTURE');
-                    else if (dept.id === 'civil') matchingComplaints = complaints.filter((c:any) => c.category === 'FURNITURE');
-                    
-                    const total = matchingComplaints.length;
-                    const resolved = matchingComplaints.filter((c:any) => c.status === 'RESOLVED').length;
-                    const active = total - resolved;
+    const { data, error, isLoading } = useSWR('/api/admin/departments', fetcher, {
+        keepPreviousData: true,
+    });
 
-                    return { ...dept, total, active, resolved };
-                });
-                
-                setDepartments(updatedDepts);
-                setLoading(false);
-            })
-            .catch(() => setLoading(false));
-    }, []);
+    const departments = useMemo(() => {
+        const counts = data?.counts || {};
+        return DEPARTMENTS.map(dept => {
+            const code = DEPT_ID_TO_CODE[dept.id] || '';
+            const deptCounts = counts[code] || { total: 0, active: 0, resolved: 0 };
+            return {
+                ...dept,
+                total: deptCounts.total,
+                active: deptCounts.active,
+                resolved: deptCounts.resolved,
+            };
+        });
+    }, [data]);
 
     const totalDepts = departments.length;
     const allComplaints = departments.reduce((sum, d) => sum + d.total, 0);
     const resolvedComplaints = departments.reduce((sum, d) => sum + d.resolved, 0);
     const activeComplaints = departments.reduce((sum, d) => sum + d.active, 0);
 
-    if (loading) return <div style={{ display: 'flex', justifyContent: 'center', padding: 100 }}><div className="spinner"></div></div>;
+    if (isLoading && !data) return <div style={{ display: 'flex', justifyContent: 'center', padding: 100 }}><div className="spinner"></div></div>;
 
     return (
         <div style={{ maxWidth: 1400, margin: '0 auto', color: 'white', paddingBottom: 60 }}>

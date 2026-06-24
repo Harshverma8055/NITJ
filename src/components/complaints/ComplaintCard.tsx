@@ -143,9 +143,11 @@ export default function ComplaintCard({ complaint, onVote, onClick, showVote = t
                                 {complaint.upvote_count}
                             </button>
                         )}
-                        <span style={{ display: 'flex', alignItems: 'center', gap: 5, color: 'var(--text-muted)', fontSize: 13 }}>
-                            <MessageCircle size={14} /> {complaint.comment_count}
-                        </span>
+                        {complaint.comment_count > 0 && (
+                            <span style={{ display: 'flex', alignItems: 'center', gap: 5, color: 'var(--text-muted)', fontSize: 13 }}>
+                                <MessageCircle size={14} /> {complaint.comment_count}
+                            </span>
+                        )}
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 5, color: 'var(--text-muted)', fontSize: 12 }}>
                         <Clock size={12} />

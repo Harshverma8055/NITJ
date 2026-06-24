@@ -2,7 +2,7 @@
 
 import { use, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, MapPin, Clock, CheckCircle, Image as ImageIcon, Zap, AlertTriangle, Wrench } from 'lucide-react';
+import { ArrowLeft, MapPin, Clock, CheckCircle, Image as ImageIcon, Zap, AlertTriangle, Wrench, MessageSquare } from 'lucide-react';
 import ComplaintTimeline from '@/components/complaints/ComplaintTimeline';
 
 
@@ -14,6 +14,37 @@ export default function MaintenanceComplaintDetail({ params }: { params: Promise
     const [updating, setUpdating] = useState<string | null>(null);
     const [note, setNote] = useState('');
     const [file, setFile] = useState<File | null>(null);
+    const [commentText, setCommentText] = useState('');
+    const [postingComment, setPostingComment] = useState(false);
+    const [commentError, setCommentError] = useState('');
+    const [isInternal, setIsInternal] = useState(false);
+
+    const postComment = async () => {
+        if (!commentText.trim() || postingComment) return;
+        setPostingComment(true);
+        setCommentError('');
+        try {
+            const res = await fetch(`/api/complaints/${id}/comments`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ content: commentText.trim(), is_internal: isInternal }),
+            });
+            const d = await res.json();
+            if (!res.ok) {
+                setCommentError(d.error || 'Failed to post comment.');
+            } else {
+                setCommentText('');
+                setIsInternal(false);
+                // Re-fetch to get updated comments
+                const refreshed = await fetch(`/api/complaints/${id}`).then(r => r.json());
+                if (refreshed.complaint) setC(refreshed.complaint);
+            }
+        } catch (err) {
+            setCommentError('Network error. Failed to post comment.');
+        } finally {
+            setPostingComment(false);
+        }
+    };
 
 
     useEffect(() => {
@@ -77,7 +108,7 @@ export default function MaintenanceComplaintDetail({ params }: { params: Promise
                 return;
             }
             alert('Status updated successfully!');
-            router.push('/maintenance/dashboard');
+            router.push(`/maintenance/dashboard?${new URLSearchParams(window.location.search).toString()}`);
         } catch (err: any) {
             alert(`Network error: ${err.message}`);
             setUpdating(null);
@@ -97,7 +128,7 @@ export default function MaintenanceComplaintDetail({ params }: { params: Promise
         <div style={{ maxWidth: 1000, margin: '0 auto', color: 'white', paddingBottom: 60 }}>
 
             <button 
-                onClick={() => router.push('/maintenance/dashboard')}
+                onClick={() => router.push(`/maintenance/dashboard?${new URLSearchParams(window.location.search).toString()}`)}
                 style={{ 
                     background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', 
                     color: 'rgba(255,255,255,0.5)', padding: '8px 16px', borderRadius: 8, display: 'flex', alignItems: 'center', gap: 8,
@@ -300,13 +331,89 @@ export default function MaintenanceComplaintDetail({ params }: { params: Promise
             )}
 
             {/* Timeline */}
-            <div style={{ background: '#13151A', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 16, padding: 32 }}>
+            <div style={{ background: '#13151A', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 16, padding: 32, marginBottom: 32 }}>
                 <h3 style={{ fontSize: 18, fontWeight: 600, margin: '0 0 24px 0' }}>📋 Status Timeline</h3>
                 <ComplaintTimeline
                     updates={c.complaint_updates || []}
                     currentStatus={c.status}
                     createdAt={c.created_at}
                 />
+            </div>
+
+            {/* Comments / Discussion Section */}
+            <div style={{ background: '#13151A', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 16, padding: 32 }}>
+                <h3 style={{ fontSize: 18, fontWeight: 600, margin: '0 0 24px 0', display: 'flex', alignItems: 'center', gap: 12 }}>
+                    <MessageSquare size={18} color="#06b6d4" /> Discussion ({c.complaint_comments?.filter((comment: any) => !comment.is_deleted).length || 0})
+                </h3>
+
+                {c.complaint_comments && c.complaint_comments.filter((comment: any) => !comment.is_deleted).length > 0 ? (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 16, marginBottom: 32 }}>
+                        {c.complaint_comments.filter((comment: any) => !comment.is_deleted).map((comment: any) => (
+                            <div key={comment.id} style={{
+                                padding: '16px',
+                                background: comment.is_official ? 'rgba(99,102,241,0.08)' : 'rgba(255,255,255,0.02)',
+                                borderRadius: 12,
+                                border: comment.is_official ? '1px solid rgba(99,102,241,0.3)' : '1px solid rgba(255,255,255,0.05)',
+                            }}>
+                                <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 8 }}>
+                                    <span style={{ fontWeight: 600, fontSize: 13, color: comment.is_official ? '#818cf8' : 'white', display: 'flex', alignItems: 'center', gap: 6 }}>
+                                        {comment.is_official ? '🏛️ Official' : ''} 
+                                        {comment.is_internal && <span style={{ background: 'rgba(239, 68, 68, 0.2)', color: '#fca5a5', padding: '2px 6px', borderRadius: 4, fontSize: 10, letterSpacing: 0.5 }}>🔒 INTERNAL</span>}
+                                        {comment.author?.name || 'User'}
+                                    </span>
+                                    <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)' }}>
+                                        {new Date(comment.created_at).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })}
+                                    </span>
+                                </div>
+                                <p style={{ margin: 0, fontSize: 14, color: 'rgba(255,255,255,0.8)', lineHeight: 1.6 }}>{comment.content}</p>
+                            </div>
+                        ))}
+                    </div>
+                ) : (
+                    <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: 14, marginBottom: 32 }}>No comments or updates yet.</p>
+                )}
+
+                {/* Add comment */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                    <textarea
+                        style={{
+                            width: '100%', padding: '12px 16px', background: 'rgba(0,0,0,0.2)',
+                            border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8,
+                            color: 'white', fontSize: 14, minHeight: 90, resize: 'vertical',
+                            boxSizing: 'border-box', outline: 'none'
+                        }}
+                        placeholder="Add a comment or update..."
+                        value={commentText}
+                        onChange={e => setCommentText(e.target.value)}
+                        maxLength={1000}
+                    />
+                    {commentError && <p style={{ color: '#ef4444', fontSize: 13, margin: 0 }}>{commentError}</p>}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                            <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)' }}>{commentText.length}/1000</span>
+                            <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: 'rgba(255,255,255,0.6)', cursor: 'pointer' }}>
+                                <input 
+                                    type="checkbox" 
+                                    checked={isInternal}
+                                    onChange={(e) => setIsInternal(e.target.checked)}
+                                    style={{ accentColor: '#06b6d4', cursor: 'pointer' }}
+                                />
+                                Staff-only internal note
+                            </label>
+                        </div>
+                        <button
+                            onClick={postComment}
+                            disabled={!commentText.trim() || postingComment}
+                            style={{
+                                background: '#06b6d4', color: 'white', border: 'none',
+                                padding: '8px 16px', borderRadius: 8, cursor: 'pointer',
+                                fontSize: 13, fontWeight: 600, opacity: (!commentText.trim() || postingComment) ? 0.5 : 1
+                            }}
+                        >
+                            {postingComment ? 'Posting...' : 'Post Comment'}
+                        </button>
+                    </div>
+                </div>
             </div>
         </div>
     );

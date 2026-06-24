@@ -1,73 +1,95 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { Plus, Clock, CheckCircle, AlertTriangle, Filter, Search, MapPin, User, ThumbsUp } from 'lucide-react';
+import { useEffect, useState, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { Plus, Clock, CheckCircle, AlertTriangle, Filter, Search, MapPin, User, ThumbsUp, Loader2, MessageSquare } from 'lucide-react';
+import useSWR from 'swr';
 
-export default function ComplaintsPage() {
+const fetcher = (url: string) => fetch(url).then(res => res.json());
+
+function StudentComplaintsContent() {
     const router = useRouter();
-    const [complaints, setComplaints] = useState<any[]>([]);
-    const [initialLoad, setInitialLoad] = useState(true);
-    const [isFetching, setIsFetching] = useState(false);
-    const [statusFilter, setStatusFilter] = useState<string>('ALL_ACTIVE');
-    const [votingIds, setVotingIds] = useState<Record<string, boolean>>({});
-    const [sortBy, setSortBy] = useState<string>('latest');
+    const searchParams = useSearchParams();
 
-    const fetchComplaints = (status?: string, sort: string = 'latest') => {
-        setIsFetching(true);
-        const params = new URLSearchParams({ limit: '50', sort: sort });
-        if (status === 'MY_COMPLAINTS') {
-            params.set('my_only', 'true');
-        } else if (status && status !== 'ALL_ACTIVE') {
-            params.set('status', status);
-        }
-        fetch(`/api/complaints?${params.toString()}`)
-            .then(res => res.json())
-            .then(data => {
-                let list = data.complaints || [];
-                // For ALL_ACTIVE, exclude resolved
-                if (status === 'ALL_ACTIVE') {
-                    list = list.filter((c: any) => c.status !== 'RESOLVED');
-                }
-                setComplaints(list);
-                setInitialLoad(false);
-                setIsFetching(false);
-            })
-            .catch(() => {
-                setInitialLoad(false);
-                setIsFetching(false);
-            });
+    // Read initial states from URL search params
+    const initialFilter = searchParams.get('filter') || 'ALL_ACTIVE';
+    const initialSort = searchParams.get('sort') || 'latest';
+
+    const [statusFilter, setStatusFilter] = useState<string>(initialFilter);
+    const [votingIds, setVotingIds] = useState<Record<string, boolean>>({});
+    const [sortBy, setSortBy] = useState<string>(initialSort);
+
+    // Sync search params when they change (e.g. back navigation)
+    useEffect(() => {
+        const f = searchParams.get('filter');
+        const s = searchParams.get('sort');
+        if (f) setStatusFilter(f);
+        if (s) setSortBy(s);
+    }, [searchParams]);
+
+    // Helper to update search params in a fast, shallow way
+    const updateParams = (newFilter: string, newSort: string) => {
+        const nextParams = new URLSearchParams(window.location.search);
+        nextParams.set('filter', newFilter);
+        nextParams.set('sort', newSort);
+        router.replace(`?${nextParams.toString()}`, { scroll: false });
     };
 
+    // Build URL for SWR
+    const params = new URLSearchParams({ limit: '50', sort: sortBy });
+    if (statusFilter === 'MY_COMPLAINTS') {
+        params.set('my_only', 'true');
+    } else if (statusFilter && statusFilter !== 'ALL_ACTIVE') {
+        params.set('status', statusFilter);
+    }
+    const url = `/api/complaints?${params.toString()}`;
+
+    const { data, error, isLoading, isValidating, mutate } = useSWR(url, fetcher, {
+        keepPreviousData: true, // This is crucial for smooth UI transitions!
+    });
+
+    let complaints = [];
+    if (data && data.complaints) {
+        complaints = data.complaints;
+        if (statusFilter === 'ALL_ACTIVE') {
+            complaints = complaints.filter((c: any) => c.status !== 'RESOLVED');
+        }
+    }
     const handleVote = async (e: React.MouseEvent, id: string) => {
         e.stopPropagation();
-        if (votingIds[id]) return;
-        setVotingIds(prev => ({ ...prev, [id]: true }));
+        
+        const complaint = complaints.find((c: any) => c.id === id);
+        if (!complaint) return;
+
+        const currentlyVoted = complaint.has_voted;
+        const nextVoted = !currentlyVoted;
+        const nextCount = currentlyVoted 
+            ? Math.max(0, (complaint.upvote_count ?? 0) - 1)
+            : (complaint.upvote_count ?? 0) + 1;
+
+        const optimisticComplaints = complaints.map((c: any) => 
+            c.id === id ? { ...c, has_voted: nextVoted, upvote_count: nextCount } : c
+        );
+        mutate({ ...data, complaints: optimisticComplaints }, false);
+
         try {
             const res = await fetch(`/api/complaints/${id}/vote`, { method: 'POST' });
             const d = await res.json();
             if (res.ok) {
-                setComplaints(prev => prev.map(c => {
-                    if (c.id === id) {
-                        return {
-                            ...c,
-                            has_voted: d.voted,
-                            upvote_count: d.upvote_count
-                        };
-                    }
-                    return c;
-                }));
+                mutate({ 
+                    ...data, 
+                    complaints: complaints.map((c: any) => 
+                        c.id === id ? { ...c, has_voted: d.voted, upvote_count: d.upvote_count } : c
+                    ) 
+                }, false);
+            } else {
+                mutate({ ...data, complaints }, false);
             }
         } catch (err) {
             console.error(err);
-        } finally {
-            setVotingIds(prev => ({ ...prev, [id]: false }));
+            mutate({ ...data, complaints }, false);
         }
     };
-
-    useEffect(() => {
-        fetchComplaints(statusFilter, sortBy);
-    }, [statusFilter, sortBy]);
 
     const getStatusColor = (status: string) => {
         switch (status) {
@@ -145,7 +167,10 @@ export default function ComplaintsPage() {
                 {FILTERS.map(f => (
                     <button 
                         key={f.key}
-                        onClick={() => setStatusFilter(f.key)}
+                        onClick={() => {
+                            setStatusFilter(f.key);
+                            updateParams(f.key, sortBy);
+                        }}
                         style={{
                             background: statusFilter === f.key ? '#6366f1' : 'rgba(255,255,255,0.05)',
                             color: statusFilter === f.key ? 'white' : 'rgba(255,255,255,0.6)',
@@ -160,17 +185,19 @@ export default function ComplaintsPage() {
                 ))}
             </div>
 
-            {/* Complaints Count & Sort */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, flexWrap: 'wrap', gap: 12 }}>
-                <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.4)', display: 'flex', alignItems: 'center', gap: 12 }}>
+                <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.4)', display: 'flex', alignItems: 'center', gap: 8, whiteSpace: 'nowrap' }}>
                     <span>Showing <strong style={{ color: 'rgba(255,255,255,0.7)' }}>{complaints.length}</strong> issue{complaints.length !== 1 ? 's' : ''}</span>
-                    {isFetching && <span style={{ color: '#a5b4fc', fontSize: 12, fontWeight: 600 }}>Updating...</span>}
+                    <Loader2 size={14} className="spin" style={{ color: '#a5b4fc', opacity: isValidating ? 1 : 0, transition: 'opacity 0.2s' }} />
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, whiteSpace: 'nowrap' }}>
                     <span style={{ color: 'rgba(255,255,255,0.4)' }}>Sort by:</span>
                     <div style={{ display: 'flex', gap: 6 }}>
                         <button
-                            onClick={() => setSortBy('latest')}
+                            onClick={() => {
+                                setSortBy('latest');
+                                updateParams(statusFilter, 'latest');
+                            }}
                             style={{
                                 background: sortBy === 'latest' ? 'rgba(99, 102, 241, 0.2)' : 'rgba(255, 255, 255, 0.05)',
                                 color: sortBy === 'latest' ? '#a5b4fc' : 'rgba(255, 255, 255, 0.6)',
@@ -186,7 +213,10 @@ export default function ComplaintsPage() {
                             Latest
                         </button>
                         <button
-                            onClick={() => setSortBy('upvotes')}
+                            onClick={() => {
+                                setSortBy('upvotes');
+                                updateParams(statusFilter, 'upvotes');
+                            }}
                             style={{
                                 background: sortBy === 'upvotes' ? 'rgba(99, 102, 241, 0.2)' : 'rgba(255, 255, 255, 0.05)',
                                 color: sortBy === 'upvotes' ? '#a5b4fc' : 'rgba(255, 255, 255, 0.6)',
@@ -206,20 +236,20 @@ export default function ComplaintsPage() {
             </div>
 
             {/* List */}
-            {initialLoad ? (
+            {isLoading && !data ? (
                 <div style={{ display: 'flex', justifyContent: 'center', marginTop: 60 }}><div className="spinner"></div></div>
             ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 16, opacity: isFetching ? 0.6 : 1, transition: 'opacity 0.2s' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 16, transition: 'opacity 0.2s' }}>
                     {complaints.length === 0 ? (
                         <div style={{ background: 'rgba(255,255,255,0.02)', padding: 40, borderRadius: 16, textAlign: 'center', color: 'rgba(255,255,255,0.4)', border: '1px dashed rgba(255,255,255,0.1)' }}>
                             No issues found for this filter.
                         </div>
                     ) : (
-                        complaints.map(c => (
+                        complaints.map((c: any) => (
                             <div 
                                 key={c.id} 
                                 className="complaint-card"
-                                onClick={() => router.push(`/student/complaints/${c.id}`)}
+                                onClick={() => router.push(`/student/complaints/${c.id}?${new URLSearchParams(window.location.search).toString()}`)}
                                 style={{ 
                                     background: 'rgba(255,255,255,0.02)', padding: '24px', 
                                     borderRadius: 16, cursor: 'pointer', border: '1px solid rgba(255,255,255,0.05)',
@@ -258,7 +288,6 @@ export default function ComplaintsPage() {
                                 <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                                     <button
                                         onClick={(e) => handleVote(e, c.id)}
-                                        disabled={votingIds[c.id]}
                                         style={{
                                             display: 'flex',
                                             alignItems: 'center',
@@ -267,7 +296,7 @@ export default function ComplaintsPage() {
                                             background: c.has_voted ? 'rgba(99, 102, 241, 0.2)' : 'rgba(255, 255, 255, 0.05)',
                                             border: c.has_voted ? '1px solid #6366f1' : '1px solid rgba(255, 255, 255, 0.1)',
                                             borderRadius: 20,
-                                            cursor: votingIds[c.id] ? 'not-allowed' : 'pointer',
+                                            cursor: 'pointer',
                                             color: c.has_voted ? '#a5b4fc' : 'rgba(255, 255, 255, 0.7)',
                                             fontSize: 13,
                                             fontWeight: 600,
@@ -290,6 +319,24 @@ export default function ComplaintsPage() {
                                         <span>{c.upvote_count ?? 0}</span>
                                     </button>
 
+                                    {c.comment_count > 0 && (
+                                        <div style={{
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            gap: 6,
+                                            padding: '6px 12px',
+                                            background: 'rgba(255, 255, 255, 0.05)',
+                                            border: '1px solid rgba(255, 255, 255, 0.1)',
+                                            borderRadius: 20,
+                                            color: 'rgba(255, 255, 255, 0.7)',
+                                            fontSize: 13,
+                                            fontWeight: 600,
+                                        }}>
+                                            <MessageSquare size={14} color="#6366f1" />
+                                            <span>{c.comment_count}</span>
+                                        </div>
+                                    )}
+
                                     <div style={{ 
                                         fontSize: 12, padding: '6px 16px', borderRadius: 20, fontWeight: 600,
                                         background: getStatusBg(c.status),
@@ -305,6 +352,14 @@ export default function ComplaintsPage() {
                 </div>
             )}
         </div>
+    );
+}
+
+export default function ComplaintsPage() {
+    return (
+        <Suspense fallback={<div style={{ display: 'flex', justifyContent: 'center', marginTop: 100 }}><div className="spinner"></div></div>}>
+            <StudentComplaintsContent />
+        </Suspense>
     );
 }
 

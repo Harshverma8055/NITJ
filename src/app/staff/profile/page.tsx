@@ -4,49 +4,35 @@ import { useEffect, useState } from 'react';
 import { ShieldCheck, User, Mail, Wrench, ClipboardList, CheckCircle, LogOut, ArrowLeft } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
+import useSWR from 'swr';
+
+const fetcher = (url: string) => fetch(url).then(r => r.json());
+
 export default function StaffProfilePage() {
     const router = useRouter();
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const [staff, setStaff] = useState<any>(null);
-    const [loading, setLoading] = useState(true);
-    const [pendingCount, setPendingCount] = useState(0);
-    const [resolvedCount, setResolvedCount] = useState(0);
+    
+    const { data: meData, isLoading: loading } = useSWR('/api/auth/me', fetcher);
+    const staff = meData?.staff;
 
-    useEffect(() => {
-        const loadProfile = async () => {
-            try {
-                const meRes = await fetch('/api/auth/me');
-                if (meRes.ok) {
-                    const meData = await meRes.json();
-                    if (meData.staff) {
-                        setStaff(meData.staff);
-                        
-                        // Load stats
-                        const deptCode = meData.staff.department_code || '';
-                        const deptParam = deptCode ? `&department=${encodeURIComponent(deptCode)}` : '';
-                        
-                        const [pendingRes, resolvedRes] = await Promise.all([
-                            fetch(`/api/complaints?limit=1&status=APPROVED,ASSIGNED,IN_PROGRESS${deptParam}`),
-                            fetch(`/api/complaints?limit=1&status=RESOLVED${deptParam}`)
-                        ]);
-
-                        if (pendingRes.ok && resolvedRes.ok) {
-                            const pendingData = await pendingRes.json();
-                            const resolvedData = await resolvedRes.json();
-                            setPendingCount(pendingData.total || 0);
-                            setResolvedCount(resolvedData.total || 0);
-                        }
-                    }
-                }
-                setLoading(false);
-            } catch (err) {
-                console.error(err);
-                setLoading(false);
-            }
+    const countFetcher = async (url: string) => {
+        const qs = url.split('?')[1] || '';
+        const param = qs ? `&${qs}` : '';
+        const [pendingRes, resolvedRes] = await Promise.all([
+            fetch(`/api/complaints?limit=1&status=APPROVED,ASSIGNED,IN_PROGRESS${param}`).then(r => r.json()),
+            fetch(`/api/complaints?limit=1&status=RESOLVED${param}`).then(r => r.json())
+        ]);
+        return {
+            pending: pendingRes.total || 0,
+            resolved: resolvedRes.total || 0
         };
+    };
 
-        loadProfile();
-    }, []);
+    const deptCode = staff?.department_code || '';
+    const deptParam = deptCode ? `?department=${encodeURIComponent(deptCode)}` : '';
+    
+    const { data: countsData } = useSWR(staff ? `/staff/counts${deptParam}` : null, countFetcher);
+    const pendingCount = countsData?.pending || 0;
+    const resolvedCount = countsData?.resolved || 0;
 
     if (loading) return <div style={{ display: 'flex', justifyContent: 'center', marginTop: 100 }}><div className="spinner"></div></div>;
     if (!staff) return <div style={{ textAlign: 'center', color: 'white', marginTop: 100 }}>Profile not found</div>;

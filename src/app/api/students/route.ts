@@ -10,7 +10,11 @@ export async function GET(request: Request) {
         
         const supabase = getSupabase();
 
-        let query = supabase
+        let allStudents: any[] = [];
+        const pageSize = 1000;
+
+        // Fetch first page with total count
+        const { data: firstPage, error: firstError, count } = await supabase
             .from('students')
             .select(`
                 id,
@@ -19,20 +23,49 @@ export async function GET(request: Request) {
                 year,
                 rating,
                 user:user_id (name, email)
-            `);
+            `, { count: 'exact' })
+            .order('roll_number', { ascending: true })
+            .range(0, pageSize - 1);
 
-        // We can do simple filtering here or return all and filter on client since there are only ~1100 students
-        // For 1100 students, returning all of them is around 100kb, perfectly fine for client-side filtering.
-        // But let's let the DB do it if we want.
-        
-        const { data, error } = await query.order('roll_number', { ascending: true }).limit(2000);
-
-        if (error) {
-            console.error("DB Error:", error);
-            return NextResponse.json({ error: error.message }, { status: 500 });
+        if (firstError) {
+            console.error("DB Error:", firstError);
+            return NextResponse.json({ error: firstError.message }, { status: 500 });
         }
 
-        return NextResponse.json({ students: data });
+        if (firstPage) {
+            allStudents = [...firstPage];
+        }
+
+        const total = count || 0;
+        let offset = pageSize;
+
+        // Fetch remaining pages
+        while (offset < total) {
+            const { data: pageData, error: pageError } = await supabase
+                .from('students')
+                .select(`
+                    id,
+                    roll_number,
+                    department,
+                    year,
+                    rating,
+                    user:user_id (name, email)
+                `)
+                .order('roll_number', { ascending: true })
+                .range(offset, offset + pageSize - 1);
+
+            if (pageError) {
+                console.error("DB Error on offset", offset, ":", pageError);
+                return NextResponse.json({ error: pageError.message }, { status: 500 });
+            }
+
+            if (pageData) {
+                allStudents = [...allStudents, ...pageData];
+            }
+            offset += pageSize;
+        }
+
+        return NextResponse.json({ students: allStudents });
     } catch (err: any) {
         return NextResponse.json({ error: err.message }, { status: 500 });
     }
