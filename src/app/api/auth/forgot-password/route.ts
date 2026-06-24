@@ -11,7 +11,7 @@ function getResetEmailHtml(userName: string, resetUrl: string): string {
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Reset Your Password – CampusNiti</title>
+  <title>Reset Your Password – Campus Pulse</title>
 </head>
 <body style="margin:0;padding:0;background-color:#0a0c10;font-family:'Segoe UI',Arial,sans-serif;">
   <table width="100%" cellpadding="0" cellspacing="0" style="background:#0a0c10;padding:40px 0;">
@@ -25,7 +25,7 @@ function getResetEmailHtml(userName: string, resetUrl: string): string {
               <div style="width:52px;height:52px;background:rgba(255,255,255,0.15);border-radius:14px;display:inline-flex;align-items:center;justify-content:center;margin-bottom:14px;">
                 <span style="font-size:26px;">🔐</span>
               </div>
-              <h1 style="margin:0;color:#ffffff;font-size:22px;font-weight:700;letter-spacing:-0.3px;">CampusNiti</h1>
+              <h1 style="margin:0;color:#ffffff;font-size:22px;font-weight:700;letter-spacing:-0.3px;">Campus Pulse</h1>
               <p style="margin:4px 0 0;color:rgba(255,255,255,0.75);font-size:13px;">Campus Infrastructure Management System</p>
             </td>
           </tr>
@@ -35,7 +35,7 @@ function getResetEmailHtml(userName: string, resetUrl: string): string {
             <td style="padding:40px 40px 24px;">
               <h2 style="margin:0 0 12px;color:#e2e8f0;font-size:20px;font-weight:600;">Hi ${userName},</h2>
               <p style="margin:0 0 20px;color:#94a3b8;font-size:15px;line-height:1.6;">
-                We received a request to reset the password for your CampusNiti account. Click the button below to create a new password.
+                We received a request to reset the password for your Campus Pulse account. Click the button below to create a new password.
               </p>
               <p style="margin:0 0 28px;color:#64748b;font-size:13px;line-height:1.5;">
                 ⏰ This link is valid for <strong style="color:#94a3b8;">1 hour</strong> from when this email was sent.
@@ -76,7 +76,7 @@ function getResetEmailHtml(userName: string, resetUrl: string): string {
           <tr>
             <td style="background:rgba(0,0,0,0.2);padding:20px 40px;text-align:center;">
               <p style="margin:0;color:#334155;font-size:12px;">
-                © ${new Date().getFullYear()} CampusNiti · NIT Jalandhar<br/>
+                © ${new Date().getFullYear()} Campus Pulse · NIT Jalandhar<br/>
                 This is an automated email, please do not reply.
               </p>
             </td>
@@ -137,9 +137,9 @@ export async function POST(req: NextRequest) {
 
         // Send the email via Resend
         const { error: emailError } = await resend.emails.send({
-            from: process.env.RESEND_FROM_EMAIL || 'CampusNiti <onboarding@resend.dev>',
+            from: process.env.RESEND_FROM_EMAIL || 'Campus Pulse <onboarding@resend.dev>',
             to: user.email,
-            subject: 'Reset your CampusNiti password',
+            subject: 'Reset your Campus Pulse password',
             html: getResetEmailHtml(user.name || 'there', resetUrl),
         });
 

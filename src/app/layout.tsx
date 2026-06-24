@@ -5,8 +5,8 @@ import PWARegister from "@/components/PWARegister";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Campus Pulse - Campus Management System",
-  description: "A centralized ecosystem for transparent campus management.",
+  title: "Campus Pulse – Smart Campus Infrastructure Management",
+  description: "A centralized platform for transparent campus infrastructure management at NIT Jalandhar.",
 };
 
 export default function RootLayout({

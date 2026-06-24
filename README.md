@@ -22,8 +22,8 @@
 
 1. **Clone the repository:**
    ```bash
-   git clone https://github.com/your-username/campusrate.git
-   cd campusrate
+   git clone https://github.com/Harshverma8055/NITJ.git
+   cd NITJ
    ```
 
 2. **Install Dependencies:**

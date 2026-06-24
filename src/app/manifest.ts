@@ -3,8 +3,8 @@ import { MetadataRoute } from 'next';
 export default function manifest(): MetadataRoute.Manifest {
   return {
     name: 'Campus Pulse',
-    short_name: 'NITJ Project',
-    description: 'Campus Management System',
+    short_name: 'Campus Pulse',
+    description: 'Smart Campus Infrastructure Management – NIT Jalandhar',
     start_url: '/',
     display: 'standalone',
     background_color: '#020617',

@@ -1,5 +1,5 @@
 /**
- * Campus Infrastructure Complaint & Maintenance System
+ * Campus Pulse — Complaint & Maintenance System
  * Shared helpers, types, and the priority algorithm.
  */
 
