@@ -153,7 +153,7 @@ export default function AnnouncementsPage() {
                             <h3 style={{ margin: '0 0 8px 0', color: 'rgba(255,255,255,0.7)' }}>No announcements yet</h3>
                             <p style={{ margin: 0, fontSize: 14 }}>Click the "New Announcement" button to create your first one.</p>
                         </div>
-                    ) : announcements.map(ann => (
+                    ) : announcements.map((ann: any) => (
                         <div key={ann.id} style={{ 
                             background: '#13151A', border: '1px solid rgba(255,255,255,0.05)', 
                             borderLeft: `4px solid ${getColor(ann.zone)}`, borderRadius: 12, padding: 24,

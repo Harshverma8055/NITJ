@@ -54,7 +54,7 @@ export default function AdminAuditPage() {
                             </tr>
                         </thead>
                         <tbody>
-                            {logs.map((log) => (
+                            {logs.map((log: any) => (
                                 <tr key={log.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.02)', fontSize: 14 }}>
                                     <td data-label="ACTION" style={{ padding: '16px 24px' }}>
                                         <div style={{ display: 'flex', alignItems: 'center', gap: 12, fontWeight: 600 }}>
