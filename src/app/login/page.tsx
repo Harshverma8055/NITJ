@@ -15,7 +15,6 @@ export default function LoginPage() {
     const [isResetMode, setIsResetMode] = useState(false);
     const [resetEmail, setResetEmail] = useState('');
     const [resetMessage, setResetMessage] = useState('');
-    const [demoResetLink, setDemoResetLink] = useState('');
 
     const handleLoginSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -49,11 +48,8 @@ export default function LoginPage() {
                 body: JSON.stringify({ email: resetEmail }),
             });
             const data = await res.json();
-            if (!res.ok) { setError(data.error || 'Failed to request reset'); }
-            else {
-                setResetMessage(data.message);
-                if (data.demoToken) setDemoResetLink(`${window.location.origin}/reset-password?token=${data.demoToken}`);
-            }
+            if (!res.ok) { setError(data.error || 'Failed to send reset email'); }
+            else { setResetMessage(data.message); }
         } catch { setError('Network error. Please try again.'); }
         finally { setLoading(false); }
     };
@@ -91,21 +87,17 @@ export default function LoginPage() {
                             </div>
                         </div>
                         {resetMessage && (
-                            <div style={{ padding: '12px', background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.3)', borderRadius: '8px', marginBottom: '16px', color: '#10b981', fontSize: '0.9rem', textAlign: 'center' }}>
-                                {resetMessage}
-                                {demoResetLink && (
-                                    <div style={{ marginTop: '12px', padding: '12px', background: 'rgba(0,0,0,0.3)', borderRadius: '6px' }}>
-                                        <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem', marginBottom: '8px' }}>[Demo] Click the simulated link:</p>
-                                        <a href={demoResetLink} style={{ color: 'var(--accent-primary)', textDecoration: 'underline', wordBreak: 'break-all' }}>{demoResetLink}</a>
-                                    </div>
-                                )}
+                            <div style={{ padding: '14px 16px', background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.25)', borderRadius: '10px', marginBottom: '16px', textAlign: 'center' }}>
+                                <div style={{ fontSize: '22px', marginBottom: '8px' }}>📬</div>
+                                <p style={{ color: '#10b981', fontSize: '0.9rem', margin: 0, lineHeight: 1.5 }}>{resetMessage}</p>
+                                <p style={{ color: 'var(--text-muted)', fontSize: '0.78rem', margin: '8px 0 0' }}>Check your spam folder if you don&apos;t see it.</p>
                             </div>
                         )}
-                        <button type="submit" className="btn btn-primary" disabled={loading || !!demoResetLink} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, marginBottom: '16px' }}>
+                        <button type="submit" className="btn btn-primary" disabled={loading || !!resetMessage} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, marginBottom: '16px' }}>
                             {loading ? <><div className="spinner" style={{ width: 18, height: 18, borderWidth: 2 }} />Sending...</> : 'Send Reset Link'}
                         </button>
                         <div style={{ textAlign: 'center' }}>
-                            <button type="button" onClick={() => { setIsResetMode(false); setError(''); setResetMessage(''); setDemoResetLink(''); }} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: '0.9rem', padding: '8px' }}>
+                            <button type="button" onClick={() => { setIsResetMode(false); setError(''); setResetMessage(''); }} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: '0.9rem', padding: '8px' }}>
                                 Back to Login
                             </button>
                         </div>
