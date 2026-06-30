@@ -45,7 +45,7 @@ function MaintenanceDashboardContent() {
     const { data: authData } = useSWR('/api/auth/me', authFetcher);
 
     const fetchComplaints = useCallback(async () => {
-        const deptCode = authData?.user?.maintenanceDept || null;
+        const deptCode = authData?.staff?.department_code || null;
         const deptParam = deptCode ? `&department=${encodeURIComponent(deptCode)}` : '';
         
         const [res, res2, res3] = await Promise.all([
@@ -59,8 +59,8 @@ function MaintenanceDashboardContent() {
         return {
             complaints: [...(data.complaints ?? []), ...(data2.complaints ?? []), ...(data3.complaints ?? [])],
             role: authData?.user?.role || null,
-            userDept: deptCode,
-            myId: authData?.user?.maintenanceId || null
+            userDept: authData?.staff?.department || null,
+            myId: authData?.staff?.user_id || null
         };
     }, [authData]);
 

@@ -13,7 +13,8 @@ export async function POST(req: NextRequest) {
             .from('users')
             .select('id, name, email, password_hash, role, is_active')
             .eq('email', email.toLowerCase().trim())
-            .single();
+            .limit(1)
+            .maybeSingle();
 
         console.log("Login attempt for:", email);
         console.log("Supabase URL:", process.env.NEXT_PUBLIC_SUPABASE_URL || 'FALLBACK USED');
